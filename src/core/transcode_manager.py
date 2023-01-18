@@ -1,4 +1,9 @@
 # coding=utf-8
+"""
+:author: Lyzen
+:date: 2023.01.16
+:brief: 转码
+"""
 
 import os
 import subprocess

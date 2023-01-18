@@ -1,4 +1,9 @@
 # coding=utf-8
+"""
+:author: Lyzen
+:date: 2023.01.17
+:brief: 通过 Web_Rid、直播间地址、直播间短链、(正在直播的)主播主页 获取主播房间信息
+"""
 
 import json
 import re

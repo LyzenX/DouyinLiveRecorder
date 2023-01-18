@@ -27,8 +27,7 @@ def start_recording(room, browser=None):
     if stream_url is not None:
         logger.debug(f'find stream url of {room.room_name}({room.room_id}): {stream_url}. Starting downloading...')
     else:
-        logger.error(f'{room.room_name}({room.room_id} 获取直播资源链接失败')
-        logger.debug(f'filed to find stream url of {room.room_name}({room.room_id}).')
+        logger.error_and_print(f'{room.room_name}({room.room_id} 获取直播资源链接失败')
         if browser is not None:
             browser.quit()
         return
