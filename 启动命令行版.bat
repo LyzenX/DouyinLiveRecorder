@@ -1,0 +1,2 @@
+python main.pyw
+pause

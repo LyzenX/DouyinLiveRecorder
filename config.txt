@@ -1,0 +1,42 @@
+# debug模式，会输出很多信息，如果没有出bug不建议开启
+debug = true
+
+# 多长时间检测一次开播，单位：秒(整数)
+# 越小越能来得及捕捉开播，但也越容易被封禁，请根据实际录制的数量设定
+check_period = 30
+
+# 最大同时检测的线程数
+# 线程越多检测速度越快，但对性能要求也越高，线程数太大容易被封禁
+check_threads = 2
+
+# 使用api监测是否开播
+# 如果为true，不使用浏览器进行监测，对系统资源占用大大减小，适合低性能服务器使用，但需要cookie，cookie失效时会无法监测
+# 如果为false，则使用浏览器进行监测，对系统资源占用比较高，但 cookie 失效时也能用，不过 cookie 失效时录制也不能进行
+# 由于监测是24小时进行，一直使用cookie容易被封号，不建议使用登录后的cookie
+monitor_using_api = true
+
+# ffmpeg 的地址，填点(.)为软件根目录，例：D:/software/video/，无需加上 ffmpeg.exe
+# 软件默认不带 ffmpeg.exe，请自行下载
+# 如果配置好了环境变量，即在任何目录下都可以使用 ffmpeg，则可以不填
+ffmpeg_path =
+
+# 自动转码，将 flv 转为 mp4
+auto_transcode = false
+
+# 自动转码的编码器，可以使用：
+# copy 为无损转码，速度非常快，对CPU占用较低，文件体积不变
+# h264_nvenc 为硬件编码，速度较慢，主要是对GPU的占用，只适用于NVIDIA显卡
+# libx264、h264 为软件编码，速度很慢，对CPU占用较高
+# libx265 为软件编码，速度非常慢，同等体积下可以有更好的质量，但无论是转码还是播放对性能的要求都很高，不建议使用
+# 其他 ffmpeg 支持的编码器
+auto_transcode_encoder = copy
+
+# 自动转码的比特率，如果编码器为 copy 则该选项无效，设为 0 为不指定比特率
+auto_transcode_bps = 3000k
+
+# 自动转码后删除原文件
+auto_transcode_delete_origin = false
+
+# 自定义cookie，如果自动获取的 cookie 经常失效，可以使用自定义 cookie
+# 如果是登录后的 cookie，请勿泄露，因为别人可以用它免登录操作你的账号
+cookie =
