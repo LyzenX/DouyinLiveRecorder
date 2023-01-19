@@ -12,7 +12,6 @@ import logging
 import platform
 import threading
 
-from src.gui import app_win
 from src.util import logger
 from src.plugin import plugin
 from src.core import version, config, record_manager, checker
@@ -64,6 +63,7 @@ def init(gui_mode: bool):
 
 def start_gui():
     global stop_all_threads
+    from src.gui import app_win
     app_win.ApplicationWin()
     # GUI被关闭时，继续往下运行
     stop_all_threads = True

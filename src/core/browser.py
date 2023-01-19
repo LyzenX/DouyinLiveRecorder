@@ -10,6 +10,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+from src.core import app
+
 
 class NoCliService(Service):
     def __init__(self, executable_path: str,
@@ -41,7 +43,10 @@ class Browser:
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-gpu')
         options.add_argument('--disable-dev-shm-usage')
-        self.driver = webdriver.Chrome(options=options, service=NoCliService(ChromeDriverManager().install()))
+        if app.win_mode:
+            self.driver = webdriver.Chrome(options=options, service=NoCliService(ChromeDriverManager().install()))
+        else:
+            self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
         self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
             'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
         })
