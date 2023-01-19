@@ -101,13 +101,17 @@ def start_recording(room, browser=None):
         if rec.stop_signal:
             checker.check_room(room)
 
+        # 记录结束，因为弹幕录制比视频晚，如果视频录制开始后瞬间结束又瞬间开始，就会产生两个弹幕录制线程
+        # 为防止重复录制弹幕，记录rec停止
+        rec.stop()
+
     t = Thread(target=download)
     t.setDaemon(True)
     t.start()
 
     # 弹幕录制
     if room.record_danmu:
-        record_danmu(room, now_str, browser)
+        record_danmu(room, now_str, rec, browser)
     elif browser is not None:
         browser.quit()  # 关闭浏览器，清除缓存，以修复缓存爆炸的bug
 
@@ -160,7 +164,7 @@ def get_request_headers():
     }
 
 
-def record_danmu(room, filename, browser=None):
+def record_danmu(room, filename, rec=None, browser=None):
     if browser is None:
         # 新开浏览器，需要填入 cookie 并刷新
         logger.debug(f'start recording danmu for {room.room_name}({room.room_id}). browser not passed.')
@@ -216,6 +220,8 @@ def record_danmu(room, filename, browser=None):
     start_time = time.time()
     danmu = {}
     while True:
+        if rec is not None and rec.stop_signal:
+            break
         if not record_manager.is_recording(room):
             # 直播结束，弹幕录制也结束
             break
