@@ -5,8 +5,8 @@
 然后将运行方式放在下面的方法中
 比如当直播开始录制时，进行推送
 """
-from src.util import logger
-import src.core.record_manager
+from dylr.util import logger
+import dylr.core.record_manager
 
 
 def on_open(gui: bool):
@@ -33,10 +33,11 @@ def on_close():
     ...
 
 
-def on_live_start(room):
+def on_live_start(room, filename):
     """
     直播开始时
     :param room: 直播间
+    :param filename: 录制的文件名(包含相对路径)
     """
     ...
 
@@ -63,7 +64,7 @@ def get_recordings() -> list:
     获取正在录制的直播列表
     :return: list: core.recording.Recording
     """
-    return src.core.record_manager.get_recordings()
+    return dylr.core.record_manager.get_recordings()
 
 
 def get_rooms() -> list:
@@ -71,7 +72,7 @@ def get_rooms() -> list:
     获取所有已添加的房间，包括添加但不自动录制的
     :return: list: core.room.Room
     """
-    return src.core.record_manager.get_rooms()
+    return dylr.core.record_manager.get_rooms()
 
 
 def get_logger():

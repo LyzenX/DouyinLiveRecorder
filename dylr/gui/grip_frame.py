@@ -13,7 +13,7 @@ import tkinter.messagebox
 from functools import partial
 from tkinter import ttk
 
-from src.core import record_manager, config
+from dylr.core import record_manager, config, monitor
 
 
 class GripFrame(ttk.LabelFrame):
@@ -25,26 +25,36 @@ class GripFrame(ttk.LabelFrame):
         self._get_label_bold("录制状态", 50).grid(row=0, column=2, sticky=tk.EW)
         self._get_label_bold('监测直播', 20).grid(row=0, column=3, sticky=tk.EW)
         self._get_label_bold('录制弹幕', 20).grid(row=0, column=4, sticky=tk.EW)
-        self._get_label_bold(' ', 80).grid(row=0, column=5, sticky=tk.EW)
+        self._get_label_bold('重要主播', 20).grid(row=0, column=5, sticky=tk.EW)
+        self._get_label_bold(' ', 80).grid(row=0, column=6, sticky=tk.EW)
 
         self._index = 0
         self.widgets = {}
 
-    def append(self, web_rid, name, state, auto_record, record_danmu):
+    def append(self, web_rid, name, state, auto_record, record_danmu, important):
         self._index += 1
 
         label1 = self._get_label(web_rid, 20)
         label1.grid(row=self._index, column=0, sticky=tk.EW)
+
         label2 = self._get_label(name, 20)
         label2.grid(row=self._index, column=1, sticky=tk.EW)
+
         label3 = self._get_label(state, 20)
         label3.grid(row=self._index, column=2, sticky=tk.EW)
+
         label4 = self._get_label('是' if auto_record else '否', 50)
         label4.bind('<Double-Button-1>', func=partial(self._set_auto_record, web_rid))
         label4.grid(row=self._index, column=3, sticky=tk.EW)
+
         label5 = self._get_label('是' if record_danmu else '否', 50)
         label5.bind('<Double-Button-1>', func=partial(self._set_record_danmu, web_rid))
         label5.grid(row=self._index, column=4, sticky=tk.EW)
+
+        label6 = self._get_label('是' if important else '否', 50)
+        label6.bind('<Double-Button-1>', func=partial(self._set_important, web_rid))
+        label6.grid(row=self._index, column=5, sticky=tk.EW)
+
         btn_frame = tk.Frame(self, bg='#FFFFFF', relief='ridge', borderwidth=2)
         ttk.Button(btn_frame, text='打开目录', command=partial(self._open_explorer, 'download/' + name)) \
             .grid(row=0, column=0, sticky=tk.EW)
@@ -52,8 +62,8 @@ class GripFrame(ttk.LabelFrame):
         #     .grid(row=0, column=1, sticky=tk.EW)
         ttk.Button(btn_frame, text='移除', command=partial(self.request_remove, web_rid, name)) \
             .grid(row=0, column=1, sticky=tk.EW)
-        btn_frame.grid(row=self._index, column=5, sticky=tk.EW)
-        self.widgets[web_rid] = [label1, label2, label3, label4, label5, btn_frame]
+        btn_frame.grid(row=self._index, column=6, sticky=tk.EW)
+        self.widgets[web_rid] = [label1, label2, label3, label4, label5, label6, btn_frame]
 
     def remove_all(self):
         for i in self.widgets.keys():
@@ -101,6 +111,18 @@ class GripFrame(ttk.LabelFrame):
         if web_rid in self.widgets:
             self.widgets[web_rid][4].config(text='是' if room.record_danmu else '否')
         config.save_rooms()
+
+    def _set_important(self, web_rid, event):
+        room = record_manager.get_room(web_rid)
+        if room is None:
+            return
+        room.important = not room.important
+        if web_rid in self.widgets:
+            self.widgets[web_rid][5].config(text='是' if room.important else '否')
+        config.save_rooms()
+
+        if room.important and str(web_rid) not in monitor.important_threads:
+            monitor.start_important_monitor_thread(room)
 
     def _get_label(self, text, padx):
         label = tk.Label(self, text=str(text), bg='#FFFFFF', font=('微软雅黑', 14),

@@ -12,9 +12,9 @@ import logging
 import platform
 import threading
 
-from src.util import logger
-from src.plugin import plugin
-from src.core import version, config, record_manager, checker
+from dylr.util import logger
+from dylr.plugin import plugin
+from dylr.core import version, config, record_manager, monitor
 
 win_mode = False
 win = None
@@ -54,16 +54,16 @@ def init(gui_mode: bool):
     plugin.on_loaded(gui_mode)
 
     if gui_mode:
-        t = threading.Thread(target=checker.init)
+        t = threading.Thread(target=monitor.init)
         t.start()
         start_gui()
     else:
-        checker.init()
+        monitor.init()
 
 
 def start_gui():
     global stop_all_threads
-    from src.gui import app_win
+    from dylr.gui import app_win
     app_win.ApplicationWin()
     # GUI被关闭时，继续往下运行
     stop_all_threads = True

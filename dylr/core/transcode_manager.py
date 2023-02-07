@@ -10,9 +10,9 @@ import subprocess
 import threading
 from threading import Thread
 
-from src.core import config
-from src.util import logger
-from src.util.ffmpeg_utils import FFMpegUtils
+from dylr.core import config
+from dylr.util import logger
+from dylr.util.ffmpeg_utils import FFMpegUtils
 
 
 # 同时只能有一个项目在转码，防止资源占用过高

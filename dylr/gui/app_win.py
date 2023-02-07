@@ -8,8 +8,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import simpledialog, messagebox
 
-from src.gui import grip_frame
-from src.core import version, record_manager, app, add_room_manager
+from dylr.gui import grip_frame
+from dylr.core import version, record_manager, app, add_room_manager
 
 
 class ApplicationWin(ttk.Frame):
@@ -33,7 +33,7 @@ class ApplicationWin(ttk.Frame):
         footer_frame = tk.Frame(self)
         add_room_btn = tk.Button(footer_frame, text='添加主播', font=('微软雅黑', 14), command=self._request_add_room)
         add_room_btn.grid(row=0, column=0, padx=25, pady=5)
-        info_label = tk.Label(footer_frame, text='修改监测直播、录制弹幕，直接双击[是]或[否]即可')
+        info_label = tk.Label(footer_frame, text='修改监测直播、录制弹幕、重要主播，直接双击[是]或[否]即可')
         info_label.grid(row=0, column=1, padx=10, pady=5)
         self.rootpane.add(footer_frame)
 
@@ -56,14 +56,14 @@ class ApplicationWin(ttk.Frame):
         self.grip_frame.remove_all()
         for room in record_manager.get_rooms():
             self.grip_frame.append(room.room_id, room.room_name, '未直播' if room.auto_record else '未监测',
-                                   room.auto_record, room.record_danmu)
+                                   room.auto_record, room.record_danmu, room.important)
 
     def set_state(self, room, text, color='#000000'):
         self.grip_frame.set(room.room_id, text, color)
 
     def add_room(self, room):
         self.grip_frame.append(room.room_id, room.room_name, '未直播' if room.auto_record else '未监测',
-                               room.auto_record, room.record_danmu)
+                               room.auto_record, room.record_danmu, room.important)
 
     def remove_room(self, web_rid):
         self.grip_frame.remove(web_rid)

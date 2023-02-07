@@ -5,7 +5,6 @@
 :brief: 通过 Web_Rid、直播间地址、直播间短链、(正在直播的)主播主页 获取主播房间信息
 """
 
-import json
 import re
 import threading
 import time
@@ -14,14 +13,18 @@ from tkinter import messagebox
 
 import requests
 
-from src.core import app, recorder, record_manager, config, checker
-from src.core.browser import Browser
-from src.core.room import Room
-from src.util import logger, cookie_utils
+from dylr.core import app, recorder, record_manager, config, monitor
+from dylr.core.browser import Browser
+from dylr.core.room import Room
+from dylr.util import logger, cookie_utils
 
+# Web_Rid 纯数字
 re_num = re.compile(r'^\d*$')
+# 使用 Web_Rid 的网址
 re_live = re.compile(r'^(http:|https:)?(//)?live.douyin.com/\d*')
+# 短链
 re_short = re.compile(r'^(http:|https:)?(//)?v.douyin.com/')
+# 用户主页
 re_user = re.compile(r'^(http:|https:)?(//)?(www.)?douyin.com/user/')
 
 
@@ -47,42 +50,47 @@ def try_add_room(info):
 
 
 def find_live(info):
+    """ live.douyin.com/xxx """
     info = info[info.index('.com/') + 5:]
     if '?' in info:
         info = info[:info.index('?')]
     find_web_rid(info)
 
 
-def find_web_rid(info):
-    room = record_manager.get_room(info)
+def find_web_rid(web_rid):
+    """ web_rid number """
+    room = record_manager.get_room(web_rid)
     if room is not None:
-        logger.error_and_print(f'重复获取主播房间: {room.room_name}({info})')
+        logger.error_and_print(f'重复获取主播房间: {room.room_name}({web_rid})')
         if app.win_mode:
-            messagebox.askokcancel("房间已存在", f"重复获取主播房间: {room.room_name}({info})")
+            messagebox.askokcancel("房间已存在", f"重复获取主播房间: {room.room_name}({web_rid})")
         return
 
-    resp = requests.get(recorder.get_api_url(info), headers=recorder.get_request_headers())
-    json_info = json.loads(resp.text)
-    name = json_info['data']['user']['nickname']
+    # api 1 暂时失效
+    # resp = requests.get(recorder.get_api_url1(info), headers=recorder.get_request_headers())
+    # json_info = json.loads(resp.text)
+
+    # api 2
+    json_info = recorder.get_live_state_json(web_rid)
+    name = json_info['owner']['nickname']
+
     if name is None or len(name) == 0:
         raise Exception()
-    room = Room(info, name, True, True)
+    room = Room(web_rid, name, True, True, False)
     record_manager.rooms.append(room)
     config.save_rooms()
 
     # 添加完房间立刻检查是否开播
-    def check(room):
-        checker.check_room(room)
-    threading.Thread(target=partial(check, room)).start()
+    threading.Thread(target=partial(monitor.check_room, room)).start()
 
-    logger.info_and_print(f'成功获取到房间{name}({info})')
+    logger.info_and_print(f'成功获取到房间{name}({web_rid})')
     if app.win_mode:
         app.win.add_room(room)
-        messagebox.askokcancel("添加主播成功", f"房间Web_Sid: {info} \n"
-                                         f"主播名: {name}")
+        messagebox.askokcancel("添加主播成功", f"房间Web_Sid: {web_rid} \n 主播名: {name}")
 
 
 def find_short(info):
+    """ v.douyin.com/xxx """
     browser = Browser()
     browser.open('https://www.douyin.com')
     cookies = cookie_utils.str2cookies(cookie_utils.cookie_cache)
@@ -105,6 +113,7 @@ def find_short(info):
 
 
 def find_user(info):
+    """ www.douyin.com/user/xxx """
     resp = requests.get(info, headers=recorder.get_request_headers())
     index = resp.text.index('https://live.douyin.com/')
     res = resp.text[index:]

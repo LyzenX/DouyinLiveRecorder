@@ -3,11 +3,27 @@ debug = true
 
 # 多长时间检测一次开播，单位：秒(整数)
 # 越小越能来得及捕捉开播，但也越容易被封禁，请根据实际录制的数量设定
-check_period = 30
+check_period = 25
+
+# 检测时间随机偏移
+# 即上述检测时间加上随机的偏移时间，比如检测时间是30，随机偏移是10，则检测间隔是30s~40s
+check_period_random_offset = 5
+
+# 重要主播的检测间隔
+# 由于每个重要主播都使用单独线程检测，不建议添加太多重要主播
+important_check_period = 5
+
+# 重要主播的检测间隔加上随机偏移
+important_check_period_random_offset = 3
 
 # 最大同时检测的线程数
 # 线程越多检测速度越快，但对性能要求也越高，线程数太大容易被封禁
-check_threads = 2
+# 建议1-2就行
+check_threads = 1
+
+# 检测时每个线程每个房间检测的间隔，单位：秒
+# 防止极短时间内过多请求造成的请求过于频繁，不应设太小，至少在 0.2 以上
+check_wait = 0.5
 
 # 使用api监测是否开播
 # 如果为true，不使用浏览器进行监测，对系统资源占用大大减小，适合低性能服务器使用，但需要cookie，cookie失效时会无法监测
@@ -35,8 +51,13 @@ auto_transcode_encoder = copy
 auto_transcode_bps = 3000k
 
 # 自动转码后删除原文件
+# 不建议选择，因为转码可能损坏原视频
 auto_transcode_delete_origin = false
 
-# 自定义cookie，如果自动获取的 cookie 经常失效，可以使用自定义 cookie
+# 自定义 cookie，如果自动获取的 cookie 经常失效，可以使用自定义 cookie
 # 如果是登录后的 cookie，请勿泄露，因为别人可以用它免登录操作你的账号
 cookie =
+
+# 只用在录制弹幕的自定义 cookie
+# 如果自动获取的 cookie 无法录制弹幕但可以录制视频，可以在这里使用自已的登录 cookie，同时录制弹幕的直播间量少的话不容易封号
+cookie_only_used_for_danmu =

@@ -1,6 +1,6 @@
 import sys
 
-import src.core.app
+import dylr.core.app as app
 
 
 def main():
@@ -12,11 +12,11 @@ def main():
 
 
 def run_cli():
-    src.core.app.init(False)
+    app.init(False)
 
 
 def run_gui():
-    src.core.app.init(True)
+    app.init(True)
     ...
 
 

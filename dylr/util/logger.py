@@ -4,12 +4,13 @@
 :date: 2023.01.13
 :brief: 日志工具
 """
-
+import sys
 import time
 import os.path
 import logging
+import traceback
 
-from src.core import config, app
+from dylr.core import config, app
 
 now = time.localtime()
 now_str = time.strftime('%Y%m%d_%H%M%S', now)
@@ -25,6 +26,14 @@ instance.setLevel(logging.INFO)
 handler = logging.FileHandler(filename, encoding='utf-8')
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 instance.addHandler(handler)
+
+
+def log_uncaught_exceptions(ex_cls, ex, tb):
+    fatal_and_print(''.join(traceback.format_tb(tb)))
+    fatal_and_print('{0}: {1}'.format(ex_cls, ex))
+
+
+sys.excepthook = log_uncaught_exceptions
 
 
 def info_and_print(text: str):

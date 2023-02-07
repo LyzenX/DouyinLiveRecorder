@@ -4,7 +4,6 @@
 :date: 2023.01.13
 :brief: 录制管理
 """
-import json
 
 rooms = []
 recordings = []
@@ -15,19 +14,19 @@ def get_rooms() -> list:
 
 
 def get_auto_record_rooms() -> list:
-    res = []
-    for room in rooms:
-        if room.auto_record:
-            res.append(room)
-    return res
+    return [room for room in rooms if room.auto_record]
 
 
-def get_rooms_needed_to_record() -> list:
-    res = get_auto_record_rooms()
+def get_monitor_rooms() -> list:
+    res = [room for room in rooms if room.auto_record and not room.important]
     for rec in recordings:
         if rec.room in res:
             res.remove(rec.room)
     return res
+
+
+def get_important_rooms() -> list:
+    return [room for room in rooms if room.important]
 
 
 def get_recordings() -> list:
