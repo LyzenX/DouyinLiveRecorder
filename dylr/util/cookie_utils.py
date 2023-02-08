@@ -29,6 +29,10 @@ def str2cookies(s: str):
     secs = s.split(';')
     res = []
     for cookie in secs:
+        # 抖音有时会在 cookie 时加一个没有等号的一项，跳过该项
+        if '=' not in cookie:
+            continue
+
         key, value = cookie.split('=', 1)
         cookie_dict = {
             'domain': '.douyin.com',

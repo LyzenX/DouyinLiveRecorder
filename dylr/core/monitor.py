@@ -134,7 +134,8 @@ def check_room(room):
             check_room_using_api(room)
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ChunkedEncodingError,
-                requests.exceptions.ReadTimeout):
+                requests.exceptions.ReadTimeout,
+                requests.exceptions.ProxyError):
             logger.debug(traceback.format_exc())
     else:
         check_room_using_browser(room)
@@ -153,7 +154,7 @@ def check_room_using_api(room):
 
     # api2
     room_json = recorder.get_live_state_json(room.room_id)
-    if room_json['status'] == 2:
+    if room_json and room_json['status'] == 2:
         logger.info_and_print(f'检测到 {room.room_name}({room.room_id}) 开始直播，启动录制。')
 
         now = time.localtime()

@@ -183,9 +183,10 @@ def get_api_user_url(sec_user_id):
 
 def get_live_state_json(room_id):
     api = f'https://live.douyin.com/{room_id}'
-    res = requests.get(api, headers=get_request_headers())
+    proxies = {"http": None, "https": None}
+    res = requests.get(api, headers=get_request_headers(), proxies=proxies)
     req = res.text
-    index_render_data = req.index('RENDER_DATA')
+    index_render_data = req.find('RENDER_DATA')
     if index_render_data > -1:
         info = req[index_render_data:]
         info = info[info.index('>') + 1:]
@@ -199,6 +200,10 @@ def get_live_state_json(room_id):
                          f'response: ' + info)
             return None
         room_info_json = info_json['app']['initialState']['roomStore']['roomInfo']['room']
+
+        # 获取成功，清除 cookie 失败次数
+        cookie_utils.cookie_failed = 0
+
         return room_info_json
     else:
         cookie_utils.record_cookie_failed()
