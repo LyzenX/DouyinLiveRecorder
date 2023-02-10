@@ -121,7 +121,7 @@ class GripFrame(ttk.LabelFrame):
             self.widgets[web_rid][5].config(text='是' if room.important else '否')
         config.save_rooms()
 
-        if room.important and str(web_rid) not in monitor.important_threads:
+        if room.important and str(web_rid) not in monitor.important_room_threads:
             monitor.start_important_monitor_thread(room)
 
     def _get_label(self, text, padx):

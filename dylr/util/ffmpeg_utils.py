@@ -128,7 +128,7 @@ class VideoFilter:
             res += f"ass='{self._ass}'"
 
         if res != '':
-            res = res.strip(',')  # 去掉最后的逗号
+            res = res.strip(',')  # 去掉最后的逗号(不一定有逗号)
         return res
 
 
@@ -162,7 +162,7 @@ class AudioFilter:
             res += f'loudnorm=i={self._loudnorm},'
 
         if res != '':
-            res = res.strip(',')  # 去掉最后的逗号
+            res = res.strip(',')  # 去掉最后的逗号(不一定有逗号)
         return res
 
 

@@ -6,17 +6,17 @@
 """
 
 import re
-import threading
 import time
+import threading
 from functools import partial
 from tkinter import messagebox
 
 import requests
 
-from dylr.core import app, recorder, record_manager, config, monitor
-from dylr.core.browser import Browser
 from dylr.core.room import Room
+from dylr.core.browser import Browser
 from dylr.util import logger, cookie_utils
+from dylr.core import app, record_manager, config, monitor, dy_api
 
 # Web_Rid 纯数字
 re_num = re.compile(r'^\d*$')
@@ -71,7 +71,7 @@ def find_web_rid(web_rid):
     # json_info = json.loads(resp.text)
 
     # api 2
-    json_info = recorder.get_live_state_json(web_rid)
+    json_info = dy_api.get_live_state_json(web_rid)
     name = json_info['owner']['nickname']
 
     if name is None or len(name) == 0:
@@ -114,7 +114,7 @@ def find_short(info):
 
 def find_user(info):
     """ www.douyin.com/user/xxx """
-    resp = requests.get(info, headers=recorder.get_request_headers())
+    resp = requests.get(info, headers=dy_api.get_request_headers())
     index = resp.text.index('https://live.douyin.com/')
     res = resp.text[index:]
     res = res[:res.index('?')]

@@ -15,7 +15,7 @@ max_cookie_failed = 5
 def record_cookie_failed():
     global cookie_failed
     cookie_failed += 1
-    logger.debug_and_print('检测开播时返回系统繁忙')
+    logger.debug('检测开播时返回系统繁忙')
     if cookie_failed == max_cookie_failed:
         logger.fatal_and_print('多次重试无法访问资源，可能是cookie失效')
         plugin.on_cookie_invalid()
@@ -52,7 +52,7 @@ def cookies2str(cookies):
     res = ''
     for cookie in cookies:
         res += cookie['name'] + '=' + cookie['value'] + ';'
-    res = res.strip(";")
+    res = res.strip(";")  # 去掉最后的分号(不一定有分号)
     return res
 
 

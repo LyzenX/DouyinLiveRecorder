@@ -4,19 +4,19 @@
 :date: 2023.01.13
 :brief: 直播开播检测
 """
-import random
 import time
+import random
 import threading
 import traceback
-from functools import partial
 from threading import Thread
 
 import requests
 from selenium.webdriver.common.by import By
 
-from dylr.util import logger, cookie_utils
 from dylr.core.browser import Browser
-from dylr.core import config, record_manager, recorder, app, danmu_recorder, monitor_thread_manager
+from dylr.core.room_info import RoomInfo
+from dylr.util import logger, cookie_utils
+from dylr.core import config, record_manager, recorder, app, danmu_recorder, monitor_thread_manager, dy_api
 
 
 def init():
@@ -32,10 +32,11 @@ def init():
             break
 
 
-important_threads = []
+important_room_threads = []
 
 
 def start_thread():
+    # 启动主检测线程
     t = Thread(target=check_thread_main)
     t.setDaemon(True)
     t.start()
@@ -43,25 +44,27 @@ def start_thread():
     # 重要主播，每个都开一个独立线程
     for room in record_manager.get_important_rooms():
         start_important_monitor_thread(room)
+        # 将几个重要主播的检测时间错开，避免重要主播过多时，一秒内同时检测太多
+        time.sleep(0.97)
 
 
 def start_important_monitor_thread(room):
-    t = Thread(target=partial(important_monitor, room))
+    t = Thread(target=important_monitor, args=(room,))
     t.setDaemon(True)
     t.start()
 
 
 def important_monitor(room):
-    important_threads.append(str(room.room_id))
+    important_room_threads.append(str(room.room_id))
     while True:
         # 房间被移除
         if room not in record_manager.rooms:
-            important_threads.remove(str(room.room_id))
+            important_room_threads.remove(str(room.room_id))
             break
 
         # 房间被设置为不重要
         if not room.important:
-            important_threads.remove(str(room.room_id))
+            important_room_threads.remove(str(room.room_id))
             break
 
         if not record_manager.is_recording(room):
@@ -153,8 +156,12 @@ def check_room_using_api(room):
     # if ('"status":2' in res or "'status':2" in res) and 'stream_url' in res:
 
     # api2
-    room_json = recorder.get_live_state_json(room.room_id)
-    if room_json and room_json['status'] == 2:
+    room_json = dy_api.get_live_state_json(room.room_id)
+    if room_json is None:
+        cookie_utils.record_cookie_failed()
+        return
+    room_info = RoomInfo(room_json)
+    if room_info.is_going_on_live():
         logger.info_and_print(f'检测到 {room.room_name}({room.room_id}) 开始直播，启动录制。')
 
         now = time.localtime()
@@ -162,8 +169,14 @@ def check_room_using_api(room):
         filename = f"download/{room.room_name}/{now_str}.flv"
 
         def rec_thread():
-            stream_url = room_json['stream_url']['flv_pull_url']['FULL_HD1']
-            recorder.start_recording(room, filename=filename, stream_url=stream_url)
+            stream_url = room_info.get_stream_url()
+            if stream_url is not None:
+                logger.debug(
+                    f'find stream url of {room.room_name}({room.room_id}): {stream_url}. Starting downloading...')
+                recorder.start_recording(room, filename=filename, stream_url=stream_url)
+            else:
+                logger.error_and_print(f'{room.room_name}({room.room_id}) 获取直播资源链接失败')
+                cookie_utils.record_cookie_failed()
 
         def danmu_thread():
             danmu_recorder.start_recording(room, browser=None, start_time=now)

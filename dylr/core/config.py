@@ -32,26 +32,36 @@ configs = {
 
 
 def read_configs():
-    logger.info('reading configs')
     global configs
+    logger.info('reading configs')
     with open('config.txt', 'r', encoding='UTF-8') as f:
         lines = f.readlines()
     for line in lines:
-        if line.strip().startswith('#'):
+        # 去除无用行
+        if line.strip().startswith('#') or '=' not in line:
             continue
-        if '=' in line:
-            lv = line[0:line.index('=')].strip()
-            rv = line[line.index('=')+1:].strip()
-            if lv in configs:
-                if type(configs[lv]) == bool:
-                    configs[lv] = True if rv.lower() == 'true' else False
-                else:
-                    configs[lv] = type(configs[lv])(rv)
-                if lv != 'cookie' and lv != 'cookie_only_used_for_danmu':
-                    logger.info(f'config {lv} = {rv}')
-                elif len(rv) > 50:
-                    cookie_utils.cookie_cache = rv
-                    logger.info('using custom cookie')
+        lv = line[0:line.index('=')].strip()
+        rv = line[line.index('=')+1:].strip()
+        # 使用了不支持的配置
+        if lv not in configs:
+            logger.warning_and_print(f'unsupported config {lv} = {rv}')
+            continue
+        # 将读取的配置字符串转为对应类型并存入 config 字典
+        # 注意 bool('True') == False
+        if type(configs[lv]) == bool:
+            configs[lv] = True if rv.lower() == 'true' else False
+        else:
+            configs[lv] = type(configs[lv])(rv)
+        # 将本次启动使用的配置记录在日志中，要避免将 cookie 记录下来，仅记录是否使用了自定义 cookie
+        if lv == 'cookie':
+            if len(rv) > 1:
+                cookie_utils.cookie_cache = rv
+                logger.info('using custom cookie')
+        elif lv == 'cookie_only_used_for_danmu':
+            if len(rv) > 1:
+                logger.info('using custom cookie for danmu')
+        else:
+            logger.info(f'config {lv} = {rv}')
 
 
 def set_config(conf: str, info):

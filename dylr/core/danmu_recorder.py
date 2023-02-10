@@ -53,6 +53,8 @@ def start_recording(room, browser=None, rec=None, start_time=None):
                     return
                 else:
                     logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播，正在重试({retry})')
+                    browser.driver.refresh()
+                    time.sleep(1)
     else:
         # 开播检测传来了浏览器，不必刷新网页
         cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
@@ -76,6 +78,9 @@ def start_recording(room, browser=None, rec=None, start_time=None):
         retry += 1
         cookie_utils.record_cookie_failed()
         logger.warning(f'Cannot find danmu of {room.room_name}({room.room_id}). Try refreshing.')
+        cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
+        for cookie in cookies:
+            browser.driver.add_cookie(cookie)
         browser.driver.refresh()
         browser.driver.implicitly_wait(10)
         time.sleep(1)
