@@ -22,7 +22,9 @@ def start_recording(room, browser=None, rec=None, start_time=None):
 
     if room in danmu_recording:
         logger.warning(f'{room.room_name}({room.room_id})的弹幕已经在录制了')
+        browser.quit()
         return
+    danmu_recording.append(room)
 
     if start_time is None:
         start_time = time.localtime()
@@ -50,6 +52,7 @@ def start_recording(room, browser=None, rec=None, start_time=None):
             if not video_tags:
                 if retry == 3:
                     logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播。')
+                    danmu_recording.remove(room)
                     return
                 else:
                     logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播，正在重试({retry})')
@@ -63,7 +66,6 @@ def start_recording(room, browser=None, rec=None, start_time=None):
         logger.debug(f'start recording danmu for {room.room_name}({room.room_id}). browser passed.')
 
     logger.info_and_print(f'开始录制 {room.room_name}({room.room_id}) 的弹幕')
-    danmu_recording.append(room)
 
     # 判断是否能加载弹幕
     # 可能的bug：如果长时间没人进入直播间，则可能会认为无法加载弹幕
