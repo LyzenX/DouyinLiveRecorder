@@ -22,7 +22,8 @@ def start_recording(room, browser=None, rec=None, start_time=None):
 
     if room in danmu_recording:
         logger.warning(f'{room.room_name}({room.room_id})的弹幕已经在录制了')
-        browser.quit()
+        if browser is not None:
+            browser.quit()
         return
     danmu_recording.append(room)
 
@@ -52,6 +53,7 @@ def start_recording(room, browser=None, rec=None, start_time=None):
             if not video_tags:
                 if retry == 3:
                     logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播。')
+                    browser.quit()
                     danmu_recording.remove(room)
                     return
                 else:
