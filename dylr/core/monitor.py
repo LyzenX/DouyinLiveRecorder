@@ -77,18 +77,18 @@ def important_monitor(room):
                    random.uniform(0, config.get_important_check_period_random_offset()))
 
 
-check_rooms = []
-lock = threading.Lock()
+# 本轮检测中需要检测房间的队列
+check_rooms_queue = []
 
 
 def check_thread_main():
     if not record_manager.get_monitor_rooms():
         logger.info_and_print('检测房间列表为空')
-    global check_rooms
+    global check_rooms_queue
     while True:
         # logger.debug_and_print('new task for checking')
-        check_rooms = record_manager.get_monitor_rooms()
-        check_rooms.reverse()
+        check_rooms_queue = record_manager.get_monitor_rooms()
+        check_rooms_queue.reverse()
         futures = []
         for i in range(config.get_check_threads()):
             futures.append(monitor_thread_manager.new_check_task(check_thread_task))
@@ -100,14 +100,11 @@ def check_thread_main():
 
 
 def check_thread_task():
-    global check_rooms
+    global check_rooms_queue
     while True:
-        lock.acquire()
-        if check_rooms:
-            room = check_rooms.pop()
-            lock.release()
+        if check_rooms_queue:
+            room = check_rooms_queue.pop()
         else:
-            lock.release()
             break
 
         if app.stop_all_threads:
