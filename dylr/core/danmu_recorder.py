@@ -101,6 +101,7 @@ def start_recording(room, browser=None, rec=None, start_time=None):
     start_time = int(time.mktime(start_time))
     danmu = {}
     retry = 1
+    paused = False
     while True:
         # 直播结束，弹幕录制也结束
         if rec is not None and rec.stop_signal:
@@ -120,12 +121,21 @@ def start_recording(room, browser=None, rec=None, start_time=None):
             for cookie in cookies:
                 browser.driver.add_cookie(cookie)
             browser.driver.refresh()
+            paused = False
             browser.driver.implicitly_wait(10)
             time.sleep(1)
             browser.send_cdp_cmd()
             # browser.driver.get_screenshot_as_file(f'./logs/debug{room.room_id}-{retry}.png')
             retry += 1
             continue
+
+        # 在加载完之后暂停视频，减少浏览器的压力
+        if not paused and time.time() - start_time > 30:
+            try:
+                paused = True
+                browser.driver.find_element(By.CLASS_NAME, 'xg-icon-pause').click()
+            except:
+                logger.debug(f'Failed to pause video of {room.room_name}({room.room_id}) when recording danmu.')
 
         # 分析并从 html 中获取弹幕
         elements = browser.driver.find_elements(By.CLASS_NAME, 'webcast-chatroom___item')

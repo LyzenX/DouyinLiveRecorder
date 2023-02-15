@@ -21,6 +21,7 @@ configs = {
     'check_threads': 1,
     'check_wait': 0.5,
     'monitor_using_api': True,
+    'api_type': 1,
     'ffmpeg_path': '',
     'auto_transcode': False,
     'auto_transcode_encoder': 'copy',
@@ -52,8 +53,11 @@ def read_configs():
             configs[lv] = True if rv.lower() == 'true' else False
         else:
             configs[lv] = type(configs[lv])(rv)
+        if lv == 'api_type':
+            if not(int(rv) == 1 or int(rv == 2)):
+                logger.fatal_and_print(f'配置出错！api_type只能选 1 或 2 ，但配置文件中写了{rv}。')
         # 将本次启动使用的配置记录在日志中，要避免将 cookie 记录下来，仅记录是否使用了自定义 cookie
-        if lv == 'cookie':
+        elif lv == 'cookie':
             if len(rv) > 1:
                 cookie_utils.cookie_cache = rv
                 logger.info('using custom cookie')
@@ -166,6 +170,10 @@ def is_using_custom_cookie():
 
 def is_monitor_using_api():
     return configs['monitor_using_api']
+
+
+def get_api_type():
+    return configs['api_type']
 
 
 def get_ffmpeg_path():

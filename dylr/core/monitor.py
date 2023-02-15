@@ -144,15 +144,6 @@ def check_room(room):
 def check_room_using_api(room):
     # logger.debug_and_print(f'checking {room.room_name}({room.room_id})')
 
-    # api1
-    # api_url = recorder.get_api_url1(room.room_id)
-    # proxies = {"http": None, "https": None}
-    # req = requests.get(api_url, headers=recorder.get_request_headers(), proxies=proxies)
-    # res = req.text
-    # print(res)
-    # if ('"status":2' in res or "'status':2" in res) and 'stream_url' in res:
-
-    # api2
     room_json = dy_api.get_live_state_json(room.room_id)
     if room_json is None:
         cookie_utils.record_cookie_failed()

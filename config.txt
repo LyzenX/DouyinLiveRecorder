@@ -31,6 +31,12 @@ check_wait = 0.5
 # 由于监测是24小时进行，一直使用cookie容易被封号，不建议使用登录后的cookie
 monitor_using_api = true
 
+# 使用的api种类
+# 因为抖音的api经常失效，这里提供了两种
+# 1: webcast，速度较快，对性能要求较低，推荐使用
+# 2: 完整网页，速度较慢，对性能要求比1高一些，如果1失效了可以尝试用2
+api_type = 1
+
 # ffmpeg 的地址，填点(.)为软件根目录，例：D:/software/video/，无需加上 ffmpeg.exe
 # 软件默认不带 ffmpeg.exe，请自行下载
 # 如果配置好了环境变量，即在任何目录下都可以使用 ffmpeg，则可以不填

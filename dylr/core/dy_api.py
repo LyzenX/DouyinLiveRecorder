@@ -10,57 +10,18 @@ import urllib.parse
 
 import requests
 
+from dylr.core import config
 from dylr.util import cookie_utils, logger
 
 
-def find_stream_url(room):
-    """ api 1 暂时失效 """
-    room_id = room.room_id
-
-    url = get_api_url1(room_id)
-    proxies = {"http": None, "https": None}
-    resp = requests.get(url, headers=get_request_headers(), proxies=proxies)
-    resp_text = resp.text
-
-    if '系统繁忙，请稍后再试' in resp_text:
-        cookie_utils.record_cookie_failed()
-
-    # 可能是双引号被替换成了单引号，但 json 接受双引号，故将单引号转为双引号
-    resp_text = resp_text.replace("'", '"')
-
-    try:
-        json_info = json.loads(resp_text)
-    except:
-        logger.debug(f'failed to load response of GET to json when finding stream url of {room.room_name}({room_id}).'
-                     f' response: ' + resp_text)
-        return None
-
-    try:
-        if 'data' in json_info and 'data' in json_info['data']:
-            data = json_info['data']['data']
-            stream_url = data[0]['stream_url']
-            flv_pull_url = stream_url['flv_pull_url']
-            flv_url = flv_pull_url['FULL_HD1']
-
-            return flv_url
-        else:
-            logger.debug(f'failed to read json when finding stream url of {room.room_name}({room_id}).'
-                         f' json: ' + str(json_info))
-    except:
-        logger.debug(f'failed to read json when finding stream url of {room.room_name}({room_id}).'
-                     f' json: ' + str(json_info))
-    return None
-
-
 def get_api_url1(room_id):
-    """ api 1 暂时失效 """
-    return "https://live.douyin.com/webcast/web/enter/?aid=6383&live_id=1&device_platform=web" \
-           "&language=zh-CN&enter_from=web_live&cookie_enabled=true&screen_width=1536&screen_height=864" \
-           "&browser_language=zh-CN&browser_platform=Win32&browser_name=Chrome&browser_version=94.0.4606.81" \
-           f"&room_id_str=&enter_source=&web_rid={room_id}"
+    return 'https://live.douyin.com/webcast/room/web/enter/?aid=6383&live_id=1&device_platform=web&language=zh-CN' \
+           '&enter_from=web_live&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN' \
+           f'&browser_platform=Win32&browser_name=Chrome&browser_version=109.0.0.0&web_rid={room_id}' \
+           f'&enter_source=&Room-Enter-User-Login-Ab=1&is_need_double_stream=false'
 
 
-def find_stream_url2(room):
+def find_stream_url(room):
     json_info = get_live_state_json(room.room_id)
     if json_info is None:
         return None
@@ -74,34 +35,62 @@ def get_api_user_url(sec_user_id):
 
 
 def get_live_state_json(room_id):
-    api = f'https://live.douyin.com/{room_id}'
-    proxies = {"http": None, "https": None}
-    res = requests.get(api, headers=get_request_headers(), proxies=proxies)
-    req = res.text
-    index_render_data = req.find('RENDER_DATA')
-    if index_render_data > -1:
-        info = req[index_render_data:]
-        info = info[info.index('>') + 1:]
-        info = info[:info.index('</script>')]
-        info = urllib.parse.unquote(info)
-        info = info.replace("'", '"')
+    if config.get_api_type() == 1:
+        api_url = get_api_url1(room_id)
+        proxies = {"http": None, "https": None}
+        req = requests.get(api_url, headers=get_request_headers(), proxies=proxies)
+        res = req.text
+        if '系统繁忙，请稍后再试' in res:
+            cookie_utils.record_cookie_failed()
         try:
-            info_json = json.loads(info)
+            info_json = json.loads(res)
         except:
-            logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 2, '
-                         f'response: ' + info)
-            return None
-        try:
-            room_info_json = info_json['app']['initialState']['roomStore']['roomInfo']['room']
-        except:
-            logger.warning("Failed to load json while decoding json got from api2. json: "+str(info_json))
+            logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
+                         f'response: ' + res)
             cookie_utils.record_cookie_failed()
             return None
+        if 'data' in info_json and 'data' in info_json['data']:
+            info_json = info_json['data']['data'][0]
+        else:
+            logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
+                         f'response: ' + res)
+            cookie_utils.record_cookie_failed()
+            return None
+        return info_json
+    else:
+        api = f'https://live.douyin.com/{room_id}'
+        proxies = {"http": None, "https": None}
+        res = requests.get(api, headers=get_request_headers(), proxies=proxies)
+        req = res.text
+        index_render_data = req.find('RENDER_DATA')
+        if index_render_data > -1:
+            info = req[index_render_data:]
+            info = info[info.index('>') + 1:]
+            info = info[:info.index('</script>')]
+            info = urllib.parse.unquote(info)
+            info = info.replace("'", '"')
+            try:
+                info_json = json.loads(info)
+            except:
+                logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 2'
+                             f', response: ' + info)
+                cookie_utils.record_cookie_failed()
+                return None
+            try:
+                room_info_json = info_json['app']['initialState']['roomStore']['roomInfo']
+                if 'room' not in room_info_json:
+                    return None
+                else:
+                    room_info_json = room_info_json['room']
+            except:
+                logger.warning("Failed to load json while decoding json got from api2. json: "+str(info))
+                cookie_utils.record_cookie_failed()
+                return None
 
-        # 获取成功，清除 cookie 失败次数
-        cookie_utils.cookie_failed = 0
+            # 获取成功，清除 cookie 失败次数
+            cookie_utils.cookie_failed = 0
 
-        return room_info_json
+            return room_info_json
     return None
 
 

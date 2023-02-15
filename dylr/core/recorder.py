@@ -28,7 +28,7 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
 
     # 获取直播视频流链接
     if stream_url is None:
-        stream_url = dy_api.find_stream_url2(room)
+        stream_url = dy_api.find_stream_url(room)
         if stream_url is not None:
             logger.debug(f'find stream url of {room.room_name}({room.room_id}): {stream_url}. Starting downloading...')
         else:
@@ -107,12 +107,12 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
         if config.is_auto_transcode():
             transcode_manager.start_transcode(filename)
 
-        rec.stop()
-
         # 再次检测是否在直播，防止因网络问题造成的提前停止录制
         # 如果是主动停止录制，则不立刻再次检查
-        if rec.stop_signal:
+        if not rec.stop_signal:
             monitor.check_room(room)
+
+        rec.stop()
 
     t = Thread(target=download)
     t.start()
