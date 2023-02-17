@@ -99,6 +99,10 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
         logger.info_and_print(f'{room.room_name}({room.room_id}) 录制结束')
         plugin.on_live_end(room, filename)
 
+        # 录制的视频大小为0，删除文件
+        if os.path.exists(filename) and os.stat(filename).st_size == 0:
+            os.remove(filename)
+
         # GUI
         if app.win_mode:
             app.win.set_state(room, '未开播', color='#000000')

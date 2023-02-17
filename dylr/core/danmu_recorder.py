@@ -131,8 +131,8 @@ def start_recording(room, browser=None, rec=None, start_time=None):
 
         # 在加载完之后暂停视频，减少浏览器的压力
         if not paused and time.time() - start_time > 30:
+            paused = True
             try:
-                paused = True
                 browser.driver.find_element(By.CLASS_NAME, 'xg-icon-pause').click()
             except:
                 logger.debug(f'Failed to pause video of {room.room_name}({room.room_id}) when recording danmu.')

@@ -56,6 +56,8 @@ def read_configs():
         if lv == 'api_type':
             if not(int(rv) == 1 or int(rv == 2)):
                 logger.fatal_and_print(f'配置出错！api_type只能选 1 或 2 ，但配置文件中写了{rv}。')
+            else:
+                logger.info(f'>>> dy api: {rv}')
         # 将本次启动使用的配置记录在日志中，要避免将 cookie 记录下来，仅记录是否使用了自定义 cookie
         elif lv == 'cookie':
             if len(rv) > 1:
