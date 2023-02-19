@@ -49,10 +49,10 @@ def get_live_state_json(room_id):
                          f'response: ' + res)
             cookie_utils.record_cookie_failed()
             return None
-        if 'data' in info_json and 'data' in info_json['data']:
+        try:
             info_json = info_json['data']['data'][0]
-        else:
-            logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
+        except:
+            logger.debug(f'failed to load json when finding stream url of {room_id}, using api 1, '
                          f'response: ' + res)
             cookie_utils.record_cookie_failed()
             return None

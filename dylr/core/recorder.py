@@ -99,9 +99,18 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
         logger.info_and_print(f'{room.room_name}({room.room_id}) 录制结束')
         plugin.on_live_end(room, filename)
 
-        # 录制的视频大小为0，删除文件
-        if os.path.exists(filename) and os.stat(filename).st_size == 0:
-            os.remove(filename)
+        if os.path.exists(filename):
+            file_size = os.stat(filename).st_size
+            # 录制的视频大小为0，删除文件
+            if file_size == 0:
+                os.remove(filename)
+            # 录制到的内容是404，删除文件
+            if file_size < 1024:
+                with open(filename, 'r', encoding='utf-8') as f:
+                    file_info = str(f.read())
+                if '<head><title>404 Not Found</title></head>' in file_info:
+                    os.remove(filename)
+
 
         # GUI
         if app.win_mode:
