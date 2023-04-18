@@ -11,17 +11,19 @@ import traceback
 from threading import Thread
 
 import requests
-from selenium.webdriver.common.by import By
 
-from dylr.core.browser import Browser
 from dylr.core.room_info import RoomInfo
 from dylr.util import logger, cookie_utils
-from dylr.core import config, record_manager, recorder, app, danmu_recorder, monitor_thread_manager, dy_api
+from dylr.core import config, record_manager, app, dy_api, monitor_thread_manager
+
+# 重要房间检测线程
+important_room_threads = []
+# 本轮检测中需要检测房间的队列
+check_rooms_queue = []
 
 
 def init():
-    if not config.is_using_custom_cookie():
-        cookie_utils.auto_get_cookie()
+    cookie_utils.auto_get_cookie()
 
     start_thread()
 
@@ -30,9 +32,6 @@ def init():
         if app.stop_all_threads:
             time.sleep(1)  # 给时间让其他线程结束
             break
-
-
-important_room_threads = []
 
 
 def start_thread():
@@ -75,10 +74,6 @@ def important_monitor(room):
                 pass  # 防止报错停止检测线程
         time.sleep(config.get_important_check_period() +
                    random.uniform(0, config.get_important_check_period_random_offset()))
-
-
-# 本轮检测中需要检测房间的队列
-check_rooms_queue = []
 
 
 def check_thread_main():
@@ -129,16 +124,13 @@ def check_thread_task():
 
 
 def check_room(room):
-    if config.is_monitor_using_api():
-        try:
-            check_room_using_api(room)
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError,
-                requests.exceptions.ReadTimeout,
-                requests.exceptions.ProxyError):
-            logger.debug(traceback.format_exc())
-    else:
-        check_room_using_browser(room)
+    try:
+        check_room_using_api(room)
+    except (requests.exceptions.ConnectionError,
+            requests.exceptions.ChunkedEncodingError,
+            requests.exceptions.ReadTimeout,
+            requests.exceptions.ProxyError):
+        logger.debug(traceback.format_exc())
 
 
 def check_room_using_api(room):
@@ -148,60 +140,8 @@ def check_room_using_api(room):
     if room_json is None:
         cookie_utils.record_cookie_failed()
         return
-    room_info = RoomInfo(room_json)
+    room_info = RoomInfo(room, room_json)
     if room_info.is_going_on_live():
         logger.info_and_print(f'检测到 {room.room_name}({room.room_id}) 开始直播，启动录制。')
 
-        now = time.localtime()
-        now_str = time.strftime('%Y%m%d_%H%M%S', now)
-        filename = f"download/{room.room_name}/{now_str}.flv"
-
-        def rec_thread():
-            stream_url = room_info.get_stream_url()
-            if stream_url is not None:
-                logger.debug(
-                    f'find stream url of {room.room_name}({room.room_id}): {stream_url}. Starting downloading...')
-                recorder.start_recording(room, filename=filename, stream_url=stream_url)
-            else:
-                logger.error_and_print(f'{room.room_name}({room.room_id}) 获取直播资源链接失败')
-                cookie_utils.record_cookie_failed()
-
-        def danmu_thread():
-            danmu_recorder.start_recording(room, browser=None, start_time=now)
-
-        threading.Thread(target=rec_thread).start()
-        if room.record_danmu:
-            threading.Thread(target=danmu_thread).start()
-    # if '系统繁忙，请稍后再试' in res or '当前服务繁忙，请稍后重试' in res:
-    #     cookie_utils.record_cookie_failed()
-
-
-def check_room_using_browser(room):
-    # logger.debug_and_print(f'checking {room.room_name}({room.room_id})')
-
-    browser = Browser()
-
-    browser.open(f'https://live.douyin.com/{room.room_id}')
-    browser.driver.implicitly_wait(10)
-    time.sleep(1)
-    browser.send_cdp_cmd()
-    video_tags = browser.driver.find_elements(By.TAG_NAME, "video")
-    if video_tags:
-        logger.info_and_print(f'检测到 {room.room_name}({room.room_id}) 开始直播，启动录制。')
-
-        now = time.localtime()
-        now_str = time.strftime('%Y%m%d_%H%M%S', now)
-        filename = f"download/{room.room_name}/{now_str}.flv"
-
-        def rec_thread():
-            recorder.start_recording(room, browser, filename)
-
-        def danmu_thread():
-            danmu_recorder.start_recording(room, browser=browser, start_time=now)
-
-        threading.Thread(target=rec_thread).start()
-        if room.record_danmu:
-            threading.Thread(target=danmu_thread).start()
-    else:
-        browser.quit()
-        # logger.debug_and_print(f'{room.room_name}({room.room_id}) has not live')
+        record_manager.start_recording(room, room_info)

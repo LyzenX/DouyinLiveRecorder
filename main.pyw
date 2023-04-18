@@ -9,6 +9,7 @@ def main():
         run_cli()
     else:
         run_gui()
+    # run_cli()
 
 
 def run_cli():

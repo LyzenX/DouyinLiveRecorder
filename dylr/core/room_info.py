@@ -8,8 +8,13 @@ from dylr.util import cookie_utils
 
 
 class RoomInfo:
-    def __init__(self, room_json):
+    def __init__(self, room, room_json):
+        self.room = room
         self.room_json = room_json
+
+    def get_real_room_id(self):
+        """ 获取 id_str , 不是 web_rid """
+        return self.room_json['id_str']
 
     def is_going_on_live(self) -> bool:
         """ 是否在直播 """

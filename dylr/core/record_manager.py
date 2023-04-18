@@ -4,6 +4,8 @@
 :date: 2023.01.13
 :brief: 录制管理
 """
+from dylr.core.recording import Recording
+from dylr.util import logger
 
 rooms = []
 recordings = []
@@ -42,6 +44,15 @@ def get_recording(room):
 
 def is_recording(room) -> bool:
     return get_recording(room) is not None
+
+
+def start_recording(room, room_info):
+    if is_recording(room):
+        logger.warning_and_print(f'{room.room_name}({room.room_id}) 已经在录制了')
+        return
+    recording = Recording(room, room_info)
+    recording.start()
+    recordings.append(recording)
 
 
 def get_room(room_id):

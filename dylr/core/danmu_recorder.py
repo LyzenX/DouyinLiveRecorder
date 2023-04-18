@@ -1,201 +1,142 @@
-# coding=utf-8
-"""
-:author: Lyzen
-:date: 2023.02.07
-:brief: 弹幕录制
-"""
-
+import _thread
+import gzip
+import os
 import time
+import traceback
 
-from selenium.webdriver.common.by import By
+import websocket
+from google.protobuf import json_format
 
-from dylr.core import record_manager, app
-from dylr.core.browser import Browser
+from dylr.core import dy_api, app, record_manager
+from dylr.core.dy_protocol import PushFrame, Response, ChatMessage
 from dylr.util import logger, cookie_utils
 
 
-danmu_recording = []
+class DanmuRecorder:
+    def __init__(self, room, room_real_id, start_time=None):
+        self.room = room
+        self.room_id = room.room_id
+        self.room_name = room.room_name
+        self.room_real_id = room_real_id
+        self.start_time = start_time
+        self.ws = None
+        self.stop_signal = False
+        self.danmu_amount = 0
+        self.last_danmu_time = 0
+        self.retry = 0
 
+    def start(self):
+        if self.start_time is None:
+            self.start_time = time.localtime()
+        self.start_time_t = int(time.mktime(self.start_time))
+        logger.info_and_print(f'开始录制 {self.room_name}({self.room_id}) 的弹幕')
 
-def start_recording(room, browser=None, rec=None, start_time=None):
-    global danmu_recording
+        if not os.path.exists("download"):
+            os.mkdir("download")
+        if not os.path.exists("download/" + self.room_name):
+            os.mkdir("download/" + self.room_name)
 
-    if room in danmu_recording:
-        logger.warning(f'{room.room_name}({room.room_id})的弹幕已经在录制了')
-        if browser is not None:
-            browser.quit()
-        return
-    danmu_recording.append(room)
+        start_time_str = time.strftime('%Y%m%d_%H%M%S', self.start_time)
+        self.filename = f"download/{self.room_name}/{start_time_str}.xml"
+        # 写入文件头部数据
+        with open(self.filename, 'w', encoding='UTF-8') as file:
+            file.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                       "<?xml-stylesheet type=\"text/xsl\" href=\"#s\"?>\n"
+                       "<i>\n")
+        self.ws = websocket.WebSocketApp(
+            url=dy_api.get_danmu_ws_url(self.room_id, self.room_real_id),
+            header=dy_api.get_request_headers(), cookie=cookie_utils.cookie_cache,
+            on_message=self._onMessage, on_error=self._onError, on_close=self._onClose,
+            on_open=self._onOpen,
+        )
+        self.ws.run_forever()
 
-    if start_time is None:
-        start_time = time.localtime()
+    def stop(self):
+        self.stop_signal = True
 
-    start_time_str = time.strftime('%Y%m%d_%H%M%S', start_time)
-    filename = f"download/{room.room_name}/{start_time_str}.xml"
+    def _onOpen(self, ws):
+        _thread.start_new_thread(self._heartbeat, (ws,))
 
-    if browser is None:
-        # 新开浏览器，需要填入 cookie 并刷新
-        logger.debug(f'start recording danmu for {room.room_name}({room.room_id}). browser not passed.')
-        browser = Browser()
-        browser.open(f'https://live.douyin.com/{room.room_id}')
-        cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
-        for cookie in cookies:
-            browser.driver.add_cookie(cookie)
-        browser.driver.refresh()
-        browser.driver.implicitly_wait(10)
-        time.sleep(1)
-        browser.send_cdp_cmd()
-        # 尝试加载直播，即寻找 video 标签
-        # 如果没找到，可能是网页未加载完成，重试
-        # 也可能是直播未开始，多次重试失败后停止录制
-        for retry in range(1, 4):
-            video_tags = browser.driver.find_elements(By.TAG_NAME, "video")
-            if not video_tags:
-                if retry == 3:
-                    logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播。')
-                    browser.quit()
-                    danmu_recording.remove(room)
-                    return
-                else:
-                    logger.error(f'{room.room_name}({room.room_id})录制弹幕失败：无法加载直播，正在重试({retry})')
-                    browser.driver.refresh()
-                    time.sleep(1)
-    else:
-        # 开播检测传来了浏览器，不必刷新网页
-        cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
-        for cookie in cookies:
-            browser.driver.add_cookie(cookie)
-        logger.debug(f'start recording danmu for {room.room_name}({room.room_id}). browser passed.')
+    def _onMessage(self, ws: websocket.WebSocketApp, message: bytes):
+        wssPackage = PushFrame()
+        wssPackage.ParseFromString(message)
+        logid = wssPackage.logid
+        decompressed = gzip.decompress(wssPackage.payload)
+        payloadPackage = Response()
+        payloadPackage.ParseFromString(decompressed)
 
-    logger.info_and_print(f'开始录制 {room.room_name}({room.room_id}) 的弹幕')
-
-    # 判断是否能加载弹幕
-    # 可能的bug：如果长时间没人进入直播间，则可能会认为无法加载弹幕
-    # 但多次失败并不会停止线程，弹幕录制线程只会在直播结束后才停止，故该bug只会稍稍影响性能(前几分钟不断刷新网页)
-    retry = 0
-    while retry < 3:
-        # 判断弹幕是否可以加载出来
-        tag = browser.driver.find_elements(By.CLASS_NAME, "webcast-chatroom___item")
-        if len(tag) > 0:
-            break
-        # 弹幕加载不出来
-        retry += 1
-        cookie_utils.record_cookie_failed()
-        logger.warning(f'Cannot find danmu of {room.room_name}({room.room_id}). Try refreshing.')
-        cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
-        for cookie in cookies:
-            browser.driver.add_cookie(cookie)
-        browser.driver.refresh()
-        browser.driver.implicitly_wait(10)
-        time.sleep(1)
-        browser.send_cdp_cmd()
-    if retry == 3:
-        logger.error_and_print(f'{room.room_name}({room.room_id}) 弹幕录制失败：无法加载弹幕，可能是cookie失效了？')
-
-    # 写入文件头部数据
-    with open(filename, 'a', encoding='UTF-8') as file:
-        file.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-                   "<?xml-stylesheet type=\"text/xsl\" href=\"#s\"?>\n"
-                   "<i>\n")
-
-    start_time = int(time.mktime(start_time))
-    danmu = {}
-    retry = 1
-    paused = False
-    while True:
-        # 直播结束，弹幕录制也结束
-        if rec is not None and rec.stop_signal:
-            break
-        if '直播已结束' in browser.driver.find_element(By.CLASS_NAME, 'basicPlayer').text:
-            break
-        if not record_manager.is_recording(room):
-            break
-        # 房间被删除，结束录制
-        if room not in record_manager.rooms:
-            break
-
-        # 一直没弹幕，重新获取
-        if len(danmu) == 0 and retry <= 3 and time.time() - start_time > 30 * retry:
-            logger.warning(f'Cannot find danmu of {room.room_name}({room.room_id}). Try refreshing.')
-            cookies = cookie_utils.str2cookies(cookie_utils.get_danmu_cookie())
-            for cookie in cookies:
-                browser.driver.add_cookie(cookie)
-            browser.driver.refresh()
-            paused = False
-            browser.driver.implicitly_wait(10)
-            time.sleep(1)
-            browser.send_cdp_cmd()
-            # browser.driver.get_screenshot_as_file(f'./logs/debug{room.room_id}-{retry}.png')
-            retry += 1
-            continue
-
-        # 在加载完之后暂停视频，减少浏览器的压力
-        if not paused and time.time() - start_time > 30:
-            paused = True
-            try:
-                browser.driver.find_element(By.CLASS_NAME, 'xg-icon-pause').click()
-            except:
-                logger.debug(f'Failed to pause video of {room.room_name}({room.room_id}) when recording danmu.')
-
-        # 分析并从 html 中获取弹幕
-        elements = browser.driver.find_elements(By.CLASS_NAME, 'webcast-chatroom___item')
-        for element in elements:
-            if app.stop_all_threads:
-                # 软件被强制停止，写入文件尾，以免弹幕文件不完整而无法使用
-                if len(danmu) > 0:
-                    with open(filename, 'a', encoding='UTF-8') as file:
-                        file.write('</i>')
-                break
-            if not record_manager.is_recording(room):
-                # 直播结束，弹幕录制也结束
-                break
-
-            try:
-                data_id = str(element.get_attribute('data-id'))
-                if data_id in danmu:
-                    continue
-
-                inner_div = element.find_elements(By.TAG_NAME, 'div')[0]
-
-                # 忽略欢迎来到直播间的提示
-                if inner_div.get_attribute('class') == 'webcast-chatroom__room-message':
-                    continue
-
-                text = inner_div.text
-                # 忽略用户来了的提示
-                if '：' not in text and '来了' in text:
-                    continue
-                # 忽略送礼
-                if '送出了 × ' in text:
-                    continue
-                # 去除用户名前面的各种花里胡哨的前缀
-                if '\n' in text:
-                    text = text[text.index('\n')+1:].strip()
-
-                # print(text)  # 在控制台中输出弹幕
-
-                user = text[:text.index('：')]
-                mes = text[text.index('：')+1:]
-
+        # 发送ack包
+        if payloadPackage.needAck:
+            obj = PushFrame()
+            obj.payloadType = 'ack'
+            obj.logid = logid
+            obj.payloadType = payloadPackage.internalExt
+            data = obj.SerializeToString()
+            ws.send(data, websocket.ABNF.OPCODE_BINARY)
+        # 处理消息
+        for msg in payloadPackage.messagesList:
+            if msg.method == 'WebcastChatMessage':
+                chatMessage = ChatMessage()
+                chatMessage.ParseFromString(msg.payload)
+                data = json_format.MessageToDict(chatMessage, preserving_proto_field_name=True)
                 now = time.time()
-                danmu[data_id] = {
-                    'user': user,
-                    'message': mes,
-                    'time': now
-                }
-
-                second = now - start_time
+                second = now - self.start_time_t
+                self.danmu_amount += 1
+                self.last_danmu_time = now
+                user = data['user']['nickName']
+                content = data['content']
                 # 写入单条数据
-                with open(filename, 'a', encoding='UTF-8') as file:
+                with open(self.filename, 'a', encoding='UTF-8') as file:
                     file.write(f"  <d p=\"{round(second, 2)},1,25,16777215,"
-                               f"{int(now*1000)},0,1602022773,0\" user=\"{user}\">{mes}</d>\n")
+                               f"{int(now * 1000)},0,1602022773,0\" user=\"{user}\">{content}</d>\n")
+                # print(data['user']['nickName'] + ': ' + data['content'])
 
-            except Exception:
-                pass
-        time.sleep(0.2)
-    # 写入文件尾
-    with open(filename, 'a', encoding='UTF-8') as file:
-        file.write('</i>')
-    logger.info_and_print(f'{room.room_name}({room.room_id}) 弹幕录制结束')
-    danmu_recording.remove(room)
-    browser.quit()  # 关闭浏览器，清除缓存
+    def _heartbeat(self, ws: websocket.WebSocketApp):
+        t = 9
+        while True:
+            if app.stop_all_threads or self.stop_signal:
+                ws.close()
+                break
+            if not ws.keep_running:
+                break
+            if t % 10 == 0:
+                obj = PushFrame()
+                obj.payloadType = 'hb'
+                data = obj.SerializeToString()
+                ws.send(data, websocket.ABNF.OPCODE_BINARY)
+                # 没弹幕，重新连接
+                if self.retry < 3 and self.danmu_amount == 0 and t > 30:
+                    ws.close()
+                    logger.warning_and_print(f'{self.room_name}({self.room_id}) 无法获取弹幕，正在重试({self.retry+1})')
+                    # time.sleep(5)
+                    # if dy_api.is_going_on_live(self.room):
+                    #     self.start_time = None  # 防止同名覆盖
+                    #     self.start()
+                    #     self.retry += 1
+                    #     break
+                now = time.time()
+                # 太长时间没弹幕，检测是否是下播了，可能下播后并没有断开 websocket
+                if t > 30 and now - self.last_danmu_time > 60:
+                    if not dy_api.is_going_on_live(self.room):
+                        ws.close()
+            t += 1
+            time.sleep(1)
+
+    def _onError(self, ws, error):
+        logger.error_and_print(f'[onError] {self.room_name}({self.room_id})弹幕录制抛出一个异常')
+        logger.error_and_print(traceback.format_exc())
+
+
+    def _onClose(self, ws, a, b):
+        # 写入文件尾
+        with open(self.filename, 'a', encoding='UTF-8') as file:
+            file.write('</i>')
+        logger.info_and_print(f'{self.room_name}({self.room_id}) 弹幕录制结束')
+        if app.stop_all_threads:
+            return
+        if self.retry < 10 and dy_api.is_going_on_live(self.room):
+            self.retry += 1
+            logger.info_and_print(f'{self.room_name}({self.room_id})弹幕录制重试({self.retry})')
+            self.start_time = None
+            time.sleep(1)
+            self.start()

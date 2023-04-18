@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 :author: Lyzen
-:date: 2023.01.13
+:date: 2023.04.03
 :brief: 配置文件读取与处理
 """
 
 import json
 import os.path
 
-from dylr.core import app, record_manager
+from dylr.core import record_manager, app
 from dylr.core.room import Room
 from dylr.util import logger, cookie_utils
 
@@ -20,15 +20,11 @@ configs = {
     'important_check_period_random_offset': 3,
     'check_threads': 1,
     'check_wait': 0.5,
-    'monitor_using_api': True,
-    'api_type': 1,
     'ffmpeg_path': '',
     'auto_transcode': False,
     'auto_transcode_encoder': 'copy',
     'auto_transcode_bps': '0',
     'auto_transcode_delete_origin': False,
-    'cookie': '',
-    'cookie_only_used_for_danmu': ''
 }
 
 
@@ -53,22 +49,7 @@ def read_configs():
             configs[lv] = True if rv.lower() == 'true' else False
         else:
             configs[lv] = type(configs[lv])(rv)
-        if lv == 'api_type':
-            if not(int(rv) == 1 or int(rv == 2)):
-                logger.fatal_and_print(f'配置出错！api_type只能选 1 或 2 ，但配置文件中写了{rv}。')
-                configs[lv] = 1
-            else:
-                logger.info(f'>>> dy api: {rv}')
-        # 将本次启动使用的配置记录在日志中，要避免将 cookie 记录下来，仅记录是否使用了自定义 cookie
-        elif lv == 'cookie':
-            if len(rv) > 1:
-                cookie_utils.cookie_cache = rv
-                logger.info('using custom cookie')
-        elif lv == 'cookie_only_used_for_danmu':
-            if len(rv) > 1:
-                logger.info('using custom cookie for danmu')
-        else:
-            logger.info(f'config {lv} = {rv}')
+        logger.info(f'config {lv} = {rv}')
 
 
 def set_config(conf: str, info):
@@ -157,26 +138,6 @@ def get_check_threads():
 
 def get_check_wait_time():
     return configs['check_wait']
-
-
-def get_custom_cookie():
-    return configs['cookie']
-
-
-def get_cookie_only_used_for_danmu():
-    return configs['cookie_only_used_for_danmu']
-
-
-def is_using_custom_cookie():
-    return len(get_custom_cookie()) > 50
-
-
-def is_monitor_using_api():
-    return configs['monitor_using_api']
-
-
-def get_api_type():
-    return configs['api_type']
 
 
 def get_ffmpeg_path():

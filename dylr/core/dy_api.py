@@ -6,15 +6,15 @@
 """
 import json
 import random
-import urllib.parse
+import time
 
 import requests
 
-from dylr.core import config
+from dylr.core.room_info import RoomInfo
 from dylr.util import cookie_utils, logger
 
 
-def get_api_url1(room_id):
+def get_api_url(room_id):
     return 'https://live.douyin.com/webcast/room/web/enter/?aid=6383&live_id=1&device_platform=web&language=zh-CN' \
            '&enter_from=web_live&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN' \
            f'&browser_platform=Win32&browser_name=Chrome&browser_version=109.0.0.0&web_rid={room_id}' \
@@ -35,63 +35,54 @@ def get_api_user_url(sec_user_id):
 
 
 def get_live_state_json(room_id):
-    if config.get_api_type() == 1:
-        api_url = get_api_url1(room_id)
-        proxies = {"http": None, "https": None}
-        req = requests.get(api_url, headers=get_request_headers(), proxies=proxies)
-        res = req.text
-        if '系统繁忙，请稍后再试' in res:
-            cookie_utils.record_cookie_failed()
-        try:
-            info_json = json.loads(res)
-        except:
-            logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
-                         f'response: ' + res)
-            cookie_utils.record_cookie_failed()
-            return None
-        try:
-            info_json = info_json['data']['data'][0]
-        except:
-            logger.debug(f'failed to load json when finding stream url of {room_id}, using api 1, '
-                         f'response: ' + res)
-            cookie_utils.record_cookie_failed()
-            return None
-        return info_json
-    else:
-        api = f'https://live.douyin.com/{room_id}'
-        proxies = {"http": None, "https": None}
-        res = requests.get(api, headers=get_request_headers(), proxies=proxies)
-        req = res.text
-        index_render_data = req.find('RENDER_DATA')
-        if index_render_data > -1:
-            info = req[index_render_data:]
-            info = info[info.index('>') + 1:]
-            info = info[:info.index('</script>')]
-            info = urllib.parse.unquote(info)
-            info = info.replace("'", '"')
-            try:
-                info_json = json.loads(info)
-            except:
-                logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 2'
-                             f', response: ' + info)
-                cookie_utils.record_cookie_failed()
-                return None
-            try:
-                room_info_json = info_json['app']['initialState']['roomStore']['roomInfo']
-                if 'room' not in room_info_json:
-                    return None
-                else:
-                    room_info_json = room_info_json['room']
-            except:
-                logger.warning("Failed to load json while decoding json got from api2. json: "+str(info))
-                cookie_utils.record_cookie_failed()
-                return None
+    api_url = get_api_url(room_id)
+    req = requests.get(api_url, headers=get_request_headers(), proxies=get_proxies())
+    res = req.text
+    if '系统繁忙，请稍后再试' in res:
+        cookie_utils.record_cookie_failed()
+    try:
+        info_json = json.loads(res)
+    except:
+        logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
+                     f'response: ' + res)
+        cookie_utils.record_cookie_failed()
+        return None
+    try:
+        info_json = info_json['data']['data'][0]
+    except:
+        logger.debug(f'failed to load json when finding stream url of {room_id}, using api 1, '
+                     f'response: ' + res)
+        cookie_utils.record_cookie_failed()
+        return None
+    return info_json
 
-            # 获取成功，清除 cookie 失败次数
-            cookie_utils.cookie_failed = 0
 
-            return room_info_json
-    return None
+def get_danmu_ws_url(room_id, live_room_real_id, retry=0):
+    if retry >= 5:
+        return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:7184667748424615439|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+
+    api = f'https://live.douyin.com/{room_id}'
+    res = requests.get(api, headers=get_request_headers(), proxies=get_proxies())
+    req = res.text
+    index_render_data = req.find('RENDER_DATA')
+    if index_render_data == -1:
+        logger.warning_and_print(f"cannot find RENDER_DATA when loading {room_id}")
+        cookie_utils.record_cookie_failed()
+        return get_danmu_ws_url(room_id, live_room_real_id, retry+1)
+
+    info = req[index_render_data:]
+    index = info.find("user_unique_id")
+    if index == -1:
+        logger.warning_and_print(f"cannot find user_unique_id when loading RENDER_DATA of {room_id}")
+        return get_danmu_ws_url(room_id, live_room_real_id, retry+1)
+
+    info = info[index+14+9:]
+    index = info.find("%")
+    user_unique_id = info[0:index]
+
+    return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+    # return f"wss://webcast3-ws-web-hl.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:7201842352902161920|dim_log_id:20230407222538FE28B78765CCB539768D|fetch_time:1680877539036|seq:1|wss_info:0-1680877539036-0-0|wrds_kvs:WebcastRoomStatsMessage-1680877533286700255_PreviewControlSyncData-1680877503878543016_WebcastRoomRankMessage-1680877275351355795&cursor=t-1680877539036_r-1_d-1_u-1_h-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&maxCacheMessageNumber=20&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&user_unique_id=7201842352902161920&device_platform=web&cookie_enabled=true&screen_width=2195&screen_height=1235&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=WMvK57+IuF+b/NFM"
+    # return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:202304090019537CDAD97C61C15213D469|fetch_time:1680970793876|seq:1|wss_info:0-1680970793876-0-0|wrds_kvs:InputPanelComponentSyncData-1680959751992084801_WebcastRoomRankMessage-1680970684111497354_WebcastRoomStatsMessage-1680970792091320480_HighlightContainerSyncData-1&cursor=d-1_u-1_h-1_t-1680970793876_r-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&maxCacheMessageNumber=20&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&user_unique_id={user_unique_id}&device_platform=web&cookie_enabled=true&screen_width=2195&screen_height=1235&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
 
 
 def get_request_headers():
@@ -101,6 +92,19 @@ def get_request_headers():
         'user-agent': get_random_ua(),
         'cookie': cookie_utils.cookie_cache
     }
+
+
+def is_going_on_live(room):
+    room_json = get_live_state_json(room.room_id)
+    if room_json is None:
+        cookie_utils.record_cookie_failed()
+        return False
+    room_info = RoomInfo(room, room_json)
+    return room_info.is_going_on_live()
+
+
+def get_proxies():
+    return {"http": None, "https": None}
 
 
 def get_random_ua():

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 :author: Lyzen
-:date: 2023.01.16
+:date: 2023.04.03
 :brief: app主文件
 """
 
@@ -12,9 +12,9 @@ import logging
 import platform
 import threading
 
+from dylr.core import version, config, record_manager, monitor
 from dylr.util import logger
 from dylr.plugin import plugin
-from dylr.core import version, config, record_manager, monitor
 
 win_mode = False
 win = None
@@ -42,8 +42,7 @@ def init(gui_mode: bool):
             os.system('chcp 65001')
         print('=' * 80)
         print(f'Douyin Live Recorder v.{version} by Lyzen')
-        print(f'吾爱破解论坛')
-        print(f'软件仅供学习交流使用，禁止商业使用，禁止用来做危害网络安全的事情，因错误使用造成的危害由使用者负责。')
+        print(f'软件仅供科研数据挖掘与学习交流，因错误使用而造成的危害由使用者负责。')
         print('=' * 80)
 
     config.read_configs()
@@ -80,30 +79,30 @@ def sigint_handler(signum, frame):
 
 def check_dependencies():
     has_requests = True
-    has_selenium = True
-    has_webdriver_manager = True
+    has_websocket = True
+    has_protobuf = True
     try:
         import requests
     except:
         has_requests = False
     try:
-        import selenium
+        import websocket
     except:
-        has_selenium = False
+        has_websocket = False
     try:
-        import webdriver_manager
+        import google.protobuf
     except:
-        has_webdriver_manager = False
+        has_protobuf = False
 
-    if has_requests and has_selenium and has_webdriver_manager:
+    if has_requests and has_websocket and has_protobuf:
         return True
     res = []
     if not has_requests:
         res.append('requests')
-    if not has_selenium:
-        res.append('selenium')
-    if not has_webdriver_manager:
-        res.append('webdriver_manager')
+    if not has_websocket:
+        res.append('websocket-client')
+    if not has_protobuf:
+        res.append('protobuf')
 
     if win_mode:
         if sys.platform == 'win32':

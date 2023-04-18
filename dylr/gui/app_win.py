@@ -9,7 +9,7 @@ import tkinter.ttk as ttk
 from tkinter import simpledialog, messagebox
 
 from dylr.gui import grip_frame
-from dylr.core import version, record_manager, app, add_room_manager
+from dylr.core import version, record_manager, app
 
 
 class ApplicationWin(ttk.Frame):
@@ -31,8 +31,8 @@ class ApplicationWin(ttk.Frame):
 
         # 底部按钮
         footer_frame = tk.Frame(self)
-        add_room_btn = tk.Button(footer_frame, text='添加主播', font=('微软雅黑', 14), command=self._request_add_room)
-        add_room_btn.grid(row=0, column=0, padx=25, pady=5)
+        # add_room_btn = tk.Button(footer_frame, text='添加主播', font=('微软雅黑', 14), command=self._request_add_room)
+        # add_room_btn.grid(row=0, column=0, padx=25, pady=5)
         info_label = tk.Label(footer_frame, text='修改监测直播、录制弹幕、重要主播，直接双击[是]或[否]即可')
         info_label.grid(row=0, column=1, padx=10, pady=5)
         self.rootpane.add(footer_frame)
@@ -74,7 +74,7 @@ class ApplicationWin(ttk.Frame):
                                                           'https://live.douyin.com/123456?xxx=\n'
                                                           'https://v.douyin.com/AbCDef\n'
                                                           'https://www.douyin.com/user/MS4wLjABAAAA2G3...')
-        add_room_manager.try_add_room(res)
+        # add_room_manager.try_add_room(res)
 
 
     def _on_canvas_adjust(self, event):
