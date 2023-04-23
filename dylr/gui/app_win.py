@@ -9,7 +9,7 @@ import tkinter.ttk as ttk
 from tkinter import simpledialog, messagebox
 
 from dylr.gui import grip_frame
-from dylr.core import version, record_manager, app
+from dylr.core import version, record_manager, app, add_room_manager
 
 
 class ApplicationWin(ttk.Frame):
@@ -31,8 +31,8 @@ class ApplicationWin(ttk.Frame):
 
         # 底部按钮
         footer_frame = tk.Frame(self)
-        # add_room_btn = tk.Button(footer_frame, text='添加主播', font=('微软雅黑', 14), command=self._request_add_room)
-        # add_room_btn.grid(row=0, column=0, padx=25, pady=5)
+        add_room_btn = tk.Button(footer_frame, text='添加主播', font=('微软雅黑', 14), command=self._request_add_room)
+        add_room_btn.grid(row=0, column=0, padx=25, pady=5)
         info_label = tk.Label(footer_frame, text='修改监测直播、录制弹幕、重要主播，直接双击[是]或[否]即可')
         info_label.grid(row=0, column=1, padx=10, pady=5)
         self.rootpane.add(footer_frame)
@@ -69,12 +69,15 @@ class ApplicationWin(ttk.Frame):
         self.grip_frame.remove(web_rid)
 
     def _request_add_room(self):
-        res = simpledialog.askstring(title='添加主播', prompt='请输入房间地址，支持Web_Sid、直播间地址、短链、(正在直播的)主播主页，如\n'
+        res = simpledialog.askstring(title='添加主播', prompt='请输入房间地址，支持Web_Sid、直播间地址、直播间分享短链、主播主页，如\n'
                                                           '123456\n'
-                                                          'https://live.douyin.com/123456?xxx=\n'
+                                                          'https://live.douyin.com/123456?xxx=  (推荐)\n'
                                                           'https://v.douyin.com/AbCDef\n'
-                                                          'https://www.douyin.com/user/MS4wLjABAAAA2G3...')
-        # add_room_manager.try_add_room(res)
+                                                          'https://www.douyin.com/user/MS4wLjABAAAA2G3...\n'
+                                                          '如果主播未开播且不知道直播间链接(没播过或没赶上)，可使用最后一个(主播主页)，但无法保证它一定能录到。\n'
+                                                          '所以如果能在某次直播时赶上，复制其直播间链接或分享的短链，它们会更稳定一些。\n'
+                                                          '如果通过主播主页链接能够录到，会自动获取并保存直播间链接。')
+        add_room_manager.try_add_room(res)
 
 
     def _on_canvas_adjust(self, event):

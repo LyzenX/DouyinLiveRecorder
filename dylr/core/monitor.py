@@ -40,6 +40,11 @@ def start_thread():
     t.setDaemon(True)
     t.start()
 
+    # 没有 web_rid 的主播
+    t = Thread(target=rooms_without_web_rid_thread)
+    t.setDaemon(True)
+    t.start()
+
     # 重要主播，每个都开一个独立线程
     for room in record_manager.get_important_rooms():
         start_important_monitor_thread(room)
@@ -131,6 +136,25 @@ def check_room(room):
             requests.exceptions.ReadTimeout,
             requests.exceptions.ProxyError):
         logger.debug(traceback.format_exc())
+
+
+def rooms_without_web_rid_thread():
+    while True:
+        if app.stop_all_threads:
+            break
+        for room in record_manager.get_room_without_web_rid():
+            nickname, web_rid = dy_api.get_user_info(room.user_sec_id)
+            if web_rid is not None:
+                logger.info(f'发现主播{nickname}开播，获取webrid: {web_rid}')
+                if app.win_mode:
+                    app.win.remove_room(room.room_id)
+                room.room_id = web_rid
+                if app.win_mode:
+                    app.win.add_room(room)
+                config.save_rooms()
+            threading.Thread(target=check_room, args=(room,)).start()
+            time.sleep(config.get_check_period())
+        time.sleep(config.get_check_wait_time())
 
 
 def check_room_using_api(room):

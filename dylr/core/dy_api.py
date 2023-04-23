@@ -29,11 +29,6 @@ def find_stream_url(room):
     return stream_url
 
 
-def get_api_user_url(sec_user_id):
-    # todo 使用该接口获取只有用户主页链接时的开播状态
-    return f'https://webcast.huoshan.com/webcast/room/info_by_user/?sec_user_id={sec_user_id}&aid=1112'
-
-
 def get_live_state_json(room_id):
     api_url = get_api_url(room_id)
     req = requests.get(api_url, headers=get_request_headers(), proxies=get_proxies())
@@ -81,8 +76,51 @@ def get_danmu_ws_url(room_id, live_room_real_id, retry=0):
     user_unique_id = info[0:index]
 
     return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
-    # return f"wss://webcast3-ws-web-hl.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:7201842352902161920|dim_log_id:20230407222538FE28B78765CCB539768D|fetch_time:1680877539036|seq:1|wss_info:0-1680877539036-0-0|wrds_kvs:WebcastRoomStatsMessage-1680877533286700255_PreviewControlSyncData-1680877503878543016_WebcastRoomRankMessage-1680877275351355795&cursor=t-1680877539036_r-1_d-1_u-1_h-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&maxCacheMessageNumber=20&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&user_unique_id=7201842352902161920&device_platform=web&cookie_enabled=true&screen_width=2195&screen_height=1235&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=WMvK57+IuF+b/NFM"
-    # return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:202304090019537CDAD97C61C15213D469|fetch_time:1680970793876|seq:1|wss_info:0-1680970793876-0-0|wrds_kvs:InputPanelComponentSyncData-1680959751992084801_WebcastRoomRankMessage-1680970684111497354_WebcastRoomStatsMessage-1680970792091320480_HighlightContainerSyncData-1&cursor=d-1_u-1_h-1_t-1680970793876_r-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&maxCacheMessageNumber=20&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&user_unique_id={user_unique_id}&device_platform=web&cookie_enabled=true&screen_width=2195&screen_height=1235&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+
+
+def get_web_rid_from_short_url(url: str):
+    resp = requests.head(url, headers=get_request_headers(), proxies=get_proxies())
+    full_uri = resp.headers.get('location')
+    room_id = full_uri[full_uri.index('reflow/') + 7:full_uri.index('?')]
+    api = f'https://webcast.amemv.com/webcast/room/reflow/info/?type_id=0&live_id=1&room_id={room_id}&app_id=1128'
+    resp = requests.get(api, headers=get_request_headers(), proxies=get_proxies())
+    json_root = json.loads(resp.text)
+    return json_root['data']['room']['owner']['web_rid']
+
+
+def get_api_user_url(sec_user_id):
+    # 使用该接口获取只有用户主页链接时的开播状态，目前已失效
+    return f'https://webcast.huoshan.com/webcast/room/info_by_user/?sec_user_id={sec_user_id}&aid=1112'
+
+
+def get_user_info(sec_user_id):
+    ms_token = generate_random_str(132)
+    headers = {
+        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+        'referer': 'https://www.douyin.com/',
+        'accept-encoding': None,
+        'Cookie': cookie_utils.cookie_cache + '; msToken=' + ms_token + '; odin_tt=324fb4ea4a89c0c05827e18a1ed9cf9bf8a17f7705fcc793fec935b637867e2a5a9b8168c885554d029919117a18ba69; passport_csrf_token=f61602fc63757ae0e4fd9d6bdcee4810;'
+    }
+    prefix = 'https://www.douyin.com/aweme/v1/web/aweme/post/?'
+    query = f'device_platform=webapp&aid=6383&channel=channel_pc_web&sec_user_id={sec_user_id}&max_cursor=0&locate_query=false&show_live_replay_strategy=1&count=1&publish_video_strategy_type=2&pc_client_type=1&version_code=170400&version_name=17.4.0&cookie_enabled=true&screen_width=2195&screen_height=1235&browser_language=zh-CN&browser_platform=Win32&browser_name=Chrome&browser_version=100.0.4896.75&browser_online=true&engine_name=Blink&engine_version=100.0.4896.75&os_name=Windows&os_version=10&cpu_core_num=12&device_memory=8&platform=PC&downlink=10&effective_type=4g&round_trip_time=0&webid=7201842352902161920&msToken={ms_token}'
+    response = json.loads(requests.post(
+        "http://47.115.208.101:9090/xb", data={"param": query}, headers=headers).text)
+    params = response["param"]
+    resp = requests.get(prefix + params,
+                        headers=headers, proxies=get_proxies())
+    nickname_index = resp.text.find('nickname')
+    if nickname_index == -1:
+        return None, None
+    nickname = resp.text[nickname_index + 11:]
+    nickname = nickname[:nickname.find('"')]
+
+    web_rid_index = resp.text.find('web_rid')
+    if web_rid_index != -1:
+        web_rid = resp.text[web_rid_index + 12:]
+        web_rid = web_rid[:web_rid.find('\\"')]
+        return nickname, web_rid
+    else:
+        return nickname, None
 
 
 def get_request_headers():
@@ -92,6 +130,15 @@ def get_request_headers():
         'user-agent': get_random_ua(),
         'cookie': cookie_utils.cookie_cache
     }
+
+
+def generate_random_str(randomlength):
+    random_str = ''
+    base_str = 'ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghigklmnopqrstuvwxyz0123456789='
+    length = len(base_str) - 1
+    for _ in range(randomlength):
+        random_str += base_str[random.randint(0, length)]
+    return random_str
 
 
 def is_going_on_live(room):

@@ -85,11 +85,16 @@ def read_rooms() -> list:
         else:
             important = False
             upgrade = True
-        res.append(Room(room_id, room_name, auto_record, record_danmu, important))
+        if 'user_sec_id' in room_json:
+            user_sec_id = room_json['user_sec_id']
+        else:
+            user_sec_id = None
+        res.append(Room(room_id, room_name, auto_record, record_danmu, important, user_sec_id))
         if not app.win_mode:
             print(f'加载房间 {room_name}({room_id})')
         logger.info(f'loaded room: {room_name}({room_id}) '
-                    f'auto_record={auto_record} record_danmu={record_danmu} important={important}')
+                    f'auto_record={auto_record} record_danmu={record_danmu} '
+                    f'important={important} user_sec_id={user_sec_id}')
         if upgrade:
             save_rooms(res)
             logger.info(f'rooms.json 为旧版本文件，已将升级到新版本。')
@@ -106,7 +111,8 @@ def save_rooms(rooms=None):
             "name": room.room_name,
             "auto_record": room.auto_record,
             "record_danmu": room.record_danmu,
-            "important": room.important
+            "important": room.important,
+            "user_sec_id": room.user_sec_id
         })
     with open("rooms.json", "w", encoding='utf-8') as f:
         json.dump(rooms_json, f, indent=2, ensure_ascii=False)
