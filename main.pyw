@@ -22,4 +22,9 @@ def run_gui():
 
 
 if __name__ == '__main__':
-    main()
+    if '--gui' in sys.argv[1:]:
+        run_gui()
+    elif '--cli' in sys.argv[1:]:
+        run_cli()
+    else:
+        main()
