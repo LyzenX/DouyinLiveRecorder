@@ -24,7 +24,8 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
     if filename is None:
         now = time.localtime()
         now_str = time.strftime('%Y%m%d_%H%M%S', now)
-        filename = f"download/{room.room_name}/{now_str}.flv"
+        download_path = config.get_download_path()
+        filename = f"{download_path}/{room.room_name}/{now_str}.flv"
 
     # 获取直播视频流链接
     if stream_url is None:
@@ -78,10 +79,11 @@ def start_recording(room, browser=None, filename=None, stream_url=None):
                 break
             except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
                 logger.error_and_print(f'{room.room_name}({room.room_id})直播获取超时，正在重试({retry})')
-        if not os.path.exists('download'):
-            os.mkdir('download')
-        if not os.path.exists(f'download/{room.room_name}'):
-            os.mkdir(f'download/{room.room_name}')
+        download_path = config.get_download_path()
+        if not os.path.exists(download_path):
+            os.mkdir(download_path)
+        if not os.path.exists(f'{download_path}/{room.room_name}'):
+            os.mkdir(f'{download_path}/{room.room_name}')
 
         with open(filename, 'wb') as file:
             try:

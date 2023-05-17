@@ -4,7 +4,7 @@ import traceback
 from typing import Optional
 
 from dylr.plugin import plugin
-from dylr.core import dy_api, record_manager
+from dylr.core import dy_api, record_manager, config
 from dylr.core.danmu_recorder import DanmuRecorder
 from dylr.core.room import Room
 from dylr.core.room_info import RoomInfo
@@ -31,7 +31,8 @@ class Recording:
 
         now = time.localtime()
         now_str = time.strftime('%Y%m%d_%H%M%S', now)
-        video_filename = f"download/{self.room.room_name}/{now_str}.flv"
+        download_path = config.get_download_path()
+        video_filename = f"{download_path}/{self.room.room_name}/{now_str}.flv"
 
         try:
             plugin.on_live_start(self.room, video_filename)
@@ -55,7 +56,8 @@ class Recording:
             return False
         now = time.localtime()
         now_str = time.strftime('%Y%m%d_%H%M%S', now)
-        video_filename = f"download/{self.room.room_name}/{now_str}.flv"
+        download_path = config.get_download_path()
+        video_filename = f"{download_path}/{self.room.room_name}/{now_str}.flv"
         self.video_recorder = None
         logger.info_and_print(f'检测到 {self.room.room_name}({self.room.room_id}) 未下播，继续录制')
         self.start_recording_video(video_filename)

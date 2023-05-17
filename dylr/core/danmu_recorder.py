@@ -7,7 +7,7 @@ import traceback
 import websocket
 from google.protobuf import json_format
 
-from dylr.core import dy_api, app, record_manager
+from dylr.core import dy_api, app, record_manager, config
 from dylr.core.dy_protocol import PushFrame, Response, ChatMessage
 from dylr.util import logger, cookie_utils
 
@@ -31,13 +31,15 @@ class DanmuRecorder:
         self.start_time_t = int(time.mktime(self.start_time))
         logger.info_and_print(f'开始录制 {self.room_name}({self.room_id}) 的弹幕')
 
-        if not os.path.exists("download"):
-            os.mkdir("download")
-        if not os.path.exists("download/" + self.room_name):
-            os.mkdir("download/" + self.room_name)
+        download_path = config.get_download_path()
+
+        if not os.path.exists(download_path):
+            os.mkdir(download_path)
+        if not os.path.exists(f"{download_path}/{self.room_name}"):
+            os.mkdir(f"{download_path}/{self.room_name}")
 
         start_time_str = time.strftime('%Y%m%d_%H%M%S', self.start_time)
-        self.filename = f"download/{self.room_name}/{start_time_str}.xml"
+        self.filename = f"{download_path}/{self.room_name}/{start_time_str}.xml"
         # 写入文件头部数据
         with open(self.filename, 'w', encoding='UTF-8') as file:
             file.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"

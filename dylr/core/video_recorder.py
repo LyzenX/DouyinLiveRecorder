@@ -47,10 +47,11 @@ class VideoRecorder:
                 break
             except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
                 logger.error_and_print(f'{self.room.room_name}({self.room.room_id})直播获取超时，正在重试({retry})')
-        if not os.path.exists('download'):
-            os.mkdir('download')
-        if not os.path.exists(f'download/{self.room.room_name}'):
-            os.mkdir(f'download/{self.room.room_name}')
+        download_path = config.get_download_path()
+        if not os.path.exists(download_path):
+            os.mkdir(download_path)
+        if not os.path.exists(f'{download_path}/{self.room.room_name}'):
+            os.mkdir(f'{download_path}/{self.room.room_name}')
 
         with open(filename, 'wb') as file:
             try:

@@ -47,3 +47,6 @@ auto_transcode_bps = 3000k
 # 自动转码后删除原文件
 # 不建议选择，因为转码可能损坏原视频
 auto_transcode_delete_origin = false
+
+# 下载目录
+download_path = download
