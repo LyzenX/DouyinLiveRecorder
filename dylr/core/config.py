@@ -25,6 +25,7 @@ configs = {
     'auto_transcode_encoder': 'copy',
     'auto_transcode_bps': '0',
     'auto_transcode_delete_origin': False,
+    'download_path': 'download',
 }
 
 
@@ -164,3 +165,6 @@ def get_auto_transcode_bps():
 
 def is_auto_transcode_delete_origin():
     return configs['auto_transcode_delete_origin']
+
+def get_download_path():
+    return configs['download_path']
