@@ -84,11 +84,14 @@ class DanmuRecorder:
                 self.danmu_amount += 1
                 self.last_danmu_time = now
                 user = data['user']['nickName']
+                userId = data['user']['id']
+                userShortId = data['user']['shortId']
+                userSecUid = data['user']['secUid']
                 content = data['content']
                 # 写入单条数据
                 with open(self.filename, 'a', encoding='UTF-8') as file:
                     file.write(f"  <d p=\"{round(second, 2)},1,25,16777215,"
-                               f"{int(now * 1000)},0,1602022773,0\" user=\"{user}\">{content}</d>\n")
+                               f"{int(now * 1000)},0,1602022773,0\" userId=\"{userId}\" userShortId=\"{userShortId}\" userSecUid=\"{userSecUid}\" user=\"{user}\">{content}</d>\n")
                 # print(data['user']['nickName'] + ': ' + data['content'])
 
     def _heartbeat(self, ws: websocket.WebSocketApp):
