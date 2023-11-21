@@ -37,6 +37,20 @@ Windows平台可以按键盘上的 *Win + R*，并在文本框中输入`cmd`，�
 ### Linux平台(无图形化界面)安装
 如果使用 Linux 应该会安装 python吧。
 
+### 实测可行的python环境（conda环境）
+``` shell
+## To reappear the environment, use the following:
+conda env create -f=environment.yml -n py-3.9.13
+#source ~/anaconda3/etc/profile.d/conda.sh
+conda activate py-3.9.13
+pip install -r requirement.txt
+
+### To use this tool, use the following:
+#source ~/anaconda3/etc/profile.d/conda.sh
+conda activate py-3.9.13
+python main.pyw
+```
+
 使用方法见下方
 
 ### 配置文件
