@@ -73,10 +73,12 @@ class ApplicationWin(ttk.Frame):
                                                           '123456\n'
                                                           'https://live.douyin.com/123456?xxx=  (推荐)\n'
                                                           'https://v.douyin.com/AbCDef\n'
-                                                          'https://www.douyin.com/user/MS4wLjABAAAA2G3...\n'
-                                                          '如果主播未开播且不知道直播间链接(没播过或没赶上)，可使用最后一个(主播主页)，但无法保证它一定能录到。\n'
-                                                          '所以如果能在某次直播时赶上，复制其直播间链接或分享的短链，它们会更稳定一些。\n'
-                                                          '如果通过主播主页链接能够录到，会自动获取并保存直播间链接。')
+                                                          '直播间短链怎么找：开播时在手机端点击分享-分享【链接】'
+                                                          # 'https://www.douyin.com/user/MS4wLjABAAAA2G3...\n'
+                                                          # '如果主播未开播且不知道直播间链接(没播过或没赶上)，可使用最后一个(主播主页)，但无法保证它一定能录到。\n'
+                                                          # '所以如果能在某次直播时赶上，复制其直播间链接或分享的短链，它们会更稳定一些。\n'
+                                                          # '如果通过主播主页链接能够录到，会自动获取并保存直播间链接。'
+                                     )
         add_room_manager.try_add_room(res)
 
 

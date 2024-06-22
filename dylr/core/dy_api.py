@@ -8,10 +8,11 @@ import json
 import random
 import time
 
+import jsengine
 import requests
 
 from dylr.core.room_info import RoomInfo
-from dylr.util import cookie_utils, logger
+from dylr.util import cookie_utils, logger, url_utils
 
 
 def get_api_url(room_id):
@@ -53,29 +54,46 @@ def get_live_state_json(room_id):
 
 
 def get_danmu_ws_url(room_id, live_room_real_id, retry=0):
-    if retry >= 5:
-        return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:7184667748424615439|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+    # 2024.6.20 接口更新，需要signature参数
+    # 代码来源：https://github.com/biliup/biliup/blob/master/biliup/Danmaku/douyin_util/__init__.py
+    user_unique_id = random.randint(7300000000000000000, 7999999999999999999)
 
-    api = f'https://live.douyin.com/{room_id}'
-    res = requests.get(api, headers=get_request_headers(), proxies=get_proxies())
-    req = res.text
-    index_render_data = req.find('RENDER_DATA')
-    if index_render_data == -1:
-        logger.warning_and_print(f"cannot find RENDER_DATA when loading {room_id}")
-        cookie_utils.record_cookie_failed()
-        return get_danmu_ws_url(room_id, live_room_real_id, retry+1)
+    with open(r'dylr/util/webmssdk.js', 'r', encoding='utf-8') as f:
+        js_enc = f.read()
 
-    info = req[index_render_data:]
-    index = info.find("user_unique_id")
-    if index == -1:
-        logger.warning_and_print(f"cannot find user_unique_id when loading RENDER_DATA of {room_id}")
-        return get_danmu_ws_url(room_id, live_room_real_id, retry+1)
+    ua = get_request_headers()['user-agent']
 
-    info = info[index+14+9:]
-    index = info.find("%")
-    user_unique_id = info[0:index]
+    ctx = jsengine.jsengine()
+    js_dom = f"""
+document = {{}}
+window = {{}}
+navigator = {{
+  'userAgent': '{ua}'
+}}
+""".strip()
+    final_js = js_dom + js_enc
+    ctx.eval(final_js)
+    function_caller = f"get_sign('{url_utils.get_ms_stub(live_room_real_id, user_unique_id)}')"
+    signature = ctx.eval(function_caller)
 
-    return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+    webcast5_params = {
+        "room_id": live_room_real_id,
+        "compress": 'gzip',
+        "version_code": 180800,
+        "webcast_sdk_version": '1.0.14-beta.0',
+        "live_id": "1",
+        "did_rule": "3",
+        "user_unique_id": user_unique_id,
+        "identity": "audience",
+        "signature": signature,
+    }
+    uri = url_utils.build_request_url(
+        f"wss://webcast5-ws-web-lf.douyin.com/webcast/im/push/v2/?{'&'.join([f'{k}={v}' for k, v in webcast5_params.items()])}",
+        ua)
+
+    return uri
+    # return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:7184667748424615439|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
+    # return f"wss://webcast3-ws-web-lf.douyin.com/webcast/im/push/v2/?app_name=douyin_web&version_code=180800&webcast_sdk_version=1.3.0&update_version_code=1.3.0&compress=gzip&internal_ext=internal_src:dim|wss_push_room_id:{live_room_real_id}|wss_push_did:{user_unique_id}|dim_log_id:2023011316221327ACACF0E44A2C0E8200|fetch_time:${int(time.time())}123|seq:1|wss_info:0-1673598133900-0-0|wrds_kvs:WebcastRoomRankMessage-1673597852921055645_WebcastRoomStatsMessage-1673598128993068211&cursor=u-1_h-1_t-1672732684536_r-1_d-1&host=https://live.douyin.com&aid=6383&live_id=1&did_rule=3&debug=false&endpoint=live_pc&support_wrds=1&im_path=/webcast/im/fetch/&device_platform=web&cookie_enabled=true&screen_width=1228&screen_height=691&browser_language=zh-CN&browser_platform=Mozilla&browser_name=Mozilla&browser_version=5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/100.0.4896.75%20Safari/537.36&browser_online=true&tz_name=Asia/Shanghai&identity=audience&room_id={live_room_real_id}&heartbeatDuration=0&signature=00000000"
 
 
 def get_web_rid_from_short_url(url: str):

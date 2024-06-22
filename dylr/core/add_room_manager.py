@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 :author: Lyzen
 :date: 2023.04.23
@@ -39,9 +40,9 @@ def try_add_room(info):
         elif re_short.match(info):
             find_short(info)
             return
-        elif re_user.match(info):
-            find_user(info)
-            return
+        # elif re_user.match(info):
+        #     find_user(info)
+        #     return
     except Exception:
         logger.error_and_print("添加主播失败，请确认输入的内容是否符合要求\n如果符合要求，可能是接口失效，请换种方式。")
         logger.error_and_print(traceback.format_exc())

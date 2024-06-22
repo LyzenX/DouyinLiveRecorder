@@ -1,3 +1,4 @@
+# coding=utf-8
 import _thread
 import gzip
 import os
@@ -8,7 +9,7 @@ import websocket
 from google.protobuf import json_format
 
 from dylr.core import dy_api, app, record_manager
-from dylr.core.dy_protocol import PushFrame, Response, ChatMessage
+from dylr.core.dy_pb2 import PushFrame, Response, ChatMessage
 from dylr.util import logger, cookie_utils
 
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 import sys
 
 import dylr.core.app as app

@@ -1,4 +1,6 @@
+# coding=utf-8
 import os
+import time
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -39,6 +41,8 @@ class VideoRecorder:
             if retry == 4:
                 logger.error_and_print(f'{self.room.room_name}({self.room.room_id})直播获取超时。')
                 self.stop()
+                time.sleep(30)
+                self.recording.refresh_video_recorder()
                 return
             try:
                 downloading = s.get(
@@ -47,10 +51,18 @@ class VideoRecorder:
                 break
             except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
                 logger.error_and_print(f'{self.room.room_name}({self.room.room_id})直播获取超时，正在重试({retry})')
+
+        # 测试时发现，虽然判断了目录是否存在，但存在多个线程同时创建的可能性(极低)，固加上异常捕捉
         if not os.path.exists('download'):
-            os.mkdir('download')
+            try:
+                os.mkdir('download')
+            except FileExistsError:  # 防止多个线程同时创建文件导致的错误
+                pass
         if not os.path.exists(f'download/{self.room.room_name}'):
-            os.mkdir(f'download/{self.room.room_name}')
+            try:
+                os.mkdir(f'download/{self.room.room_name}')
+            except FileExistsError:  # 防止多个线程同时创建文件导致的错误
+                pass
 
         with open(filename, 'wb') as file:
             try:

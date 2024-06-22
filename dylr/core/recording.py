@@ -1,3 +1,4 @@
+# coding=utf-8
 import threading
 import time
 import traceback
@@ -39,7 +40,10 @@ class Recording:
             traceback.print_exc()
         self.start_recording_video(video_filename)
         if self.room.record_danmu:
-            self.start_recording_danmu(now)
+            try:
+                self.start_recording_danmu(now)
+            except:
+                traceback.print_exc()
         return True
 
     def refresh_video_recorder(self):
