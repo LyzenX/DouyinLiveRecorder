@@ -83,7 +83,7 @@ def important_monitor(room):
 
 
 def check_thread_main():
-    if not record_manager.get_monitor_rooms():
+    if not record_manager.get_monitor_rooms() and not record_manager.get_important_rooms():
         logger.info_and_print('检测房间列表为空')
     global check_rooms_queue
     while True:

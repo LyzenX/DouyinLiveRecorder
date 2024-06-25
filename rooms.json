@@ -1,7 +1,7 @@
 [
   {
-    "id": 281981487852,
-    "name": "边牧十一",
+    "id": 945843973757,
+    "name": "瑞幸咖啡",
     "auto_record": true,
     "record_danmu": true,
     "important": true,
@@ -13,78 +13,6 @@
     "auto_record": true,
     "record_danmu": true,
     "important": true,
-    "user_sec_id": null
-  },
-  {
-    "id": 370335398395,
-    "name": "刘布宝",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": true,
-    "user_sec_id": null
-  },
-  {
-    "id": 614802947005,
-    "name": "王可爱",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": true,
-    "user_sec_id": null
-  },
-  {
-    "id": 774002804669,
-    "name": "大老虎和DD猫",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": false,
-    "user_sec_id": null
-  },
-  {
-    "id": 110517153161,
-    "name": "边牧陈贝拉",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": true,
-    "user_sec_id": null
-  },
-  {
-    "id": 328141215740,
-    "name": "胡小仙儿",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": true,
-    "user_sec_id": null
-  },
-  {
-    "id": 660282907489,
-    "name": "隔壁公司的傻狗",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": false,
-    "user_sec_id": null
-  },
-  {
-    "id": 349365492783,
-    "name": "奥利与奥斯卡",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": false,
-    "user_sec_id": null
-  },
-  {
-    "id": 388710180577,
-    "name": "边牧KK一家",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": false,
-    "user_sec_id": null
-  },
-  {
-    "id": 90293601690,
-    "name": "老疯杨",
-    "auto_record": true,
-    "record_danmu": true,
-    "important": false,
     "user_sec_id": null
   }
 ]

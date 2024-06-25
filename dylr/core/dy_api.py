@@ -39,14 +39,14 @@ def get_live_state_json(room_id):
     try:
         info_json = json.loads(res)
     except:
-        logger.debug(f'failed to load response of GET to json when finding stream url of {room_id}, using api 1, '
+        logger.debug(f'failed to load response of GET to json when searching stream url of {room_id}, using api 1, '
                      f'response: ' + res)
         cookie_utils.record_cookie_failed()
         return None
     try:
         info_json = info_json['data']['data'][0]
     except:
-        logger.debug(f'failed to load json when finding stream url of {room_id}, using api 1, '
+        logger.debug(f'failed to load json when searching stream url of {room_id}, using api 1, '
                      f'response: ' + res)
         cookie_utils.record_cookie_failed()
         return None

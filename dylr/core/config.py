@@ -7,6 +7,8 @@
 
 import json
 import os.path
+import traceback
+from json import JSONDecodeError
 
 from dylr.core import record_manager, app
 from dylr.core.room import Room
@@ -20,11 +22,12 @@ configs = {
     'important_check_period_random_offset': 3,
     'check_threads': 1,
     'check_wait': 0.5,
-    'ffmpeg_path': '',
-    'auto_transcode': False,
-    'auto_transcode_encoder': 'copy',
-    'auto_transcode_bps': '0',
-    'auto_transcode_delete_origin': False,
+    'cli_key_l': False,
+    # 'ffmpeg_path': '',
+    # 'auto_transcode': False,
+    # 'auto_transcode_encoder': 'copy',
+    # 'auto_transcode_bps': '0',
+    # 'auto_transcode_delete_origin': False,
 }
 
 
@@ -60,7 +63,6 @@ def set_config(conf: str, info):
     for index, line in enumerate(lines):
         if line.startswith(conf+' =') or line.startswith(conf+'='):
             lines[index] = f'{conf} = {info}\n'
-            print('found')
     file.seek(0)
     file.writelines(lines)
     file.close()
@@ -71,8 +73,7 @@ def read_rooms() -> list:
     if not os.path.exists('rooms.json'):
         with open('rooms.json', 'w') as f:
             f.write('[]')
-    with open("rooms.json", 'r', encoding='UTF-8') as f:
-        info = json.load(f)
+    info = read_json_considering_utf_bom("rooms.json")
     # 记录房间是否是旧版本的，如果是，升级到新版本
     upgrade = False
     for room_json in info:
@@ -116,6 +117,22 @@ def save_rooms(rooms=None):
         })
     with open("rooms.json", "w", encoding='utf-8') as f:
         json.dump(rooms_json, f, indent=2, ensure_ascii=False)
+
+
+def read_json_considering_utf_bom(path: str):
+    with open(path, 'r', encoding='UTF-8') as f:
+        try:
+            info = json.load(f)
+            return info
+        except JSONDecodeError as ex:
+            if 'Unexpected UTF-8 BOM (decode using utf-8-sig)' in ex.msg:
+                print(f'{path} 疑似使用utf-8-sig形式保存，尝试对应读取方式')
+                with open(path, 'r', encoding='UTF-8-sig') as f:
+                    info = json.load(f)
+                    return info
+            else:
+                traceback.format_exc()
+                print(f'{path} 读取失败，可能是格式出错')
 
 
 def debug():
@@ -164,3 +181,8 @@ def get_auto_transcode_bps():
 
 def is_auto_transcode_delete_origin():
     return configs['auto_transcode_delete_origin']
+
+
+def is_cli_key_l_enable():
+    return configs['cli_key_l']
+

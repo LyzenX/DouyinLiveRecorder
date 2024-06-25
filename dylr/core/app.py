@@ -12,7 +12,7 @@ import logging
 import platform
 import threading
 
-from dylr.core import version, config, record_manager, monitor
+from dylr.core import version, config, record_manager, monitor, cli_state_manager
 from dylr.util import logger
 from dylr.plugin import plugin
 
@@ -49,6 +49,11 @@ def init(gui_mode: bool):
     if config.debug():
         logger.instance.setLevel(logging.DEBUG)
     record_manager.rooms = config.read_rooms()
+
+    if config.is_cli_key_l_enable():
+        t = threading.Thread(target=cli_state_manager.run)
+        # t.setDaemon(True)
+        t.start()
 
     plugin.on_loaded(gui_mode)
 

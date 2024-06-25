@@ -25,25 +25,6 @@ check_threads = 1
 # 防止极短时间内过多请求造成的请求过于频繁，不应设太小，至少在 0.2 以上
 check_wait = 0.5
 
-# ffmpeg 的地址，填点(.)为软件根目录，例：D:/software/video/，无需加上 ffmpeg.exe
-# 软件默认不带 ffmpeg.exe，请自行下载
-# 如果配置好了环境变量，即在任何目录下都可以使用 ffmpeg，则可以不填
-ffmpeg_path =
-
-# 自动转码，将 flv 转为 mp4
-auto_transcode = false
-
-# 自动转码的编码器，可以使用：
-# copy 为无损转码，速度非常快，对CPU占用较低，文件体积不变
-# h264_nvenc 为硬件编码，速度较慢，主要是对GPU的占用，只适用于NVIDIA显卡
-# libx264、h264 为软件编码，速度很慢，对CPU占用较高
-# libx265 为软件编码，速度非常慢，同等体积下可以有更好的质量，但无论是转码还是播放对性能的要求都很高，不建议使用
-# 其他 ffmpeg 支持的编码器
-auto_transcode_encoder = copy
-
-# 自动转码的比特率，如果编码器为 copy 则该选项无效，设为 0 为不指定比特率
-auto_transcode_bps = 3000k
-
-# 自动转码后删除原文件
-# 不建议选择，因为转码可能损坏原视频
-auto_transcode_delete_origin = false
+# 命令行模式下，可以按下 L 键查看正在录制的直播房间列表
+# 实验性功能，可能无效或有其他bug(无法关闭软件等，通常在Linux下无效)，若无效请设置为false
+cli_key_l = false

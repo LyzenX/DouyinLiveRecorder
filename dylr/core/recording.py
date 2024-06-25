@@ -1,4 +1,5 @@
 # coding=utf-8
+import datetime
 import threading
 import time
 import traceback
@@ -19,6 +20,7 @@ class Recording:
         self.room_info = room_info
         self.video_recorder = None
         self.danmu_recorder = None
+        self.start_time = datetime.datetime.now()
 
     def start(self):
         if self.room_info is None:
@@ -52,10 +54,12 @@ class Recording:
         if room_json is None:
             cookie_utils.record_cookie_failed()
             record_manager.recordings.remove(self)
+            logger.debug(f'刷新 {self.room.room_name}({self.room.room_id}) 时room_json为None，结束录制')
             return False
         self.room_info = RoomInfo(self.room, room_json)
         if not self.room_info.is_going_on_live():
             record_manager.recordings.remove(self)
+            logger.debug(f'刷新 {self.room.room_name}({self.room.room_id}) 时检测到已下播，结束录制')
             return False
         now = time.localtime()
         now_str = time.strftime('%Y%m%d_%H%M%S', now)
