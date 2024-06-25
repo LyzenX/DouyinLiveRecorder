@@ -46,6 +46,8 @@ def transcode(filename: str):
     command = ffmpeg.generate()
     if len(config.get_ffmpeg_path()) > 0:
         command = config.get_ffmpeg_path() + '/' + command
+    command = command.split(" ")
+    command[2] = command[2].replace("\"", "")
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if config.is_auto_transcode_delete_origin():
         os.remove(filename)
@@ -56,9 +58,9 @@ def transcode(filename: str):
 
 def ffmpeg_bin_exist():
     if len(config.get_ffmpeg_path()) > 0:
-        ffmpeg_cmd = config.get_ffmpeg_path() + "/ffmpeg -version"
+        ffmpeg_cmd = [config.get_ffmpeg_path() + "/ffmpeg", "-version"]
     else:
-        ffmpeg_cmd = "ffmpeg -version"
+        ffmpeg_cmd = ["ffmpeg", "-version"]
     r = subprocess.run(ffmpeg_cmd, capture_output=True)
-    info = str(r.stderr, "UTF-8")
+    info = str(r.stdout, "UTF-8")
     return 'version' in info
