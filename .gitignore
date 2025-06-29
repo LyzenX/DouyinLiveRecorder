@@ -7,3 +7,41 @@
 /dylr/old/
 forum.MD
 rooms - bak.json
+
+# Testing related
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.py[cod]
+*$py.class
+
+# Claude settings
+.claude/*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+env/
+ENV/
+virtualenv/
+.venv/
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Tox
+.tox/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
