@@ -19,7 +19,7 @@ def get_api_url(room_id):
     return 'https://live.douyin.com/webcast/room/web/enter/?aid=6383&live_id=1&device_platform=web&language=zh-CN' \
            '&enter_from=web_live&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN' \
            f'&browser_platform=Win32&browser_name=Chrome&browser_version=109.0.0.0&web_rid={room_id}' \
-           f'&enter_source=&Room-Enter-User-Login-Ab=1&is_need_double_stream=false'
+           f'&enter_source=&Room-Enter-User-Login-Ab=1&is_need_double_stream=false&a_bogus=0'
 
 
 def find_stream_url(room):
