@@ -83,37 +83,29 @@ def sigint_handler(signum, frame):
 
 
 def check_dependencies():
-    has_requests = True
-    has_websocket = True
-    has_protobuf = True
+    lack_dependencies = []
     try:
         import requests
     except:
-        has_requests = False
+        lack_dependencies.append('requests')
     try:
         import websocket
     except:
-        has_websocket = False
+        lack_dependencies.append('websocket-client')
     try:
         import google.protobuf
     except:
-        has_protobuf = False
-
-    if has_requests and has_websocket and has_protobuf:
-        return True
-    res = []
-    if not has_requests:
-        res.append('requests')
-    if not has_websocket:
-        res.append('websocket-client')
-    if not has_protobuf:
-        res.append('protobuf')
+        lack_dependencies.append('protobuf')
+    try:
+        import gmssl
+    except:
+        lack_dependencies.append('gmssl')
 
     if win_mode:
         if sys.platform == 'win32':
             os.system(f'start cmd /C "chcp 65001 & '
-                      f'echo 缺少依赖{res}，请运行(安装依赖.bat)或运行命令(python -m pip install -r requirements.txt) & '
+                      f'echo 缺少依赖{lack_dependencies}，请运行(安装依赖.bat)或运行命令(python -m pip install -r requirements.txt) & '
                       f'pause"')
         else:
-            print(f'echo 缺少依赖{res}，请运行(安装依赖.bat)或运行命令(python -m pip install -r requirements.txt)')
+            print(f'echo 缺少依赖{lack_dependencies}，请运行(安装依赖.bat)或运行命令(python -m pip install -r requirements.txt)')
     return False

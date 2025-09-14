@@ -3,3 +3,4 @@ websocket-client~=1.5.1
 protobuf==3.6.0
 jsengine~=1.0.7.post1
 quickjs~=1.19.4
+gmssl~=3.2.2

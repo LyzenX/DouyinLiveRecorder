@@ -11,15 +11,26 @@ import time
 import jsengine
 import requests
 
+from dylr.core.abogus import ABogus
 from dylr.core.room_info import RoomInfo
 from dylr.util import cookie_utils, logger, url_utils
 
 
 def get_api_url(room_id):
-    return 'https://live.douyin.com/webcast/room/web/enter/?aid=6383&live_id=1&device_platform=web&language=zh-CN' \
-           '&enter_from=web_live&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN' \
-           f'&browser_platform=Win32&browser_name=Chrome&browser_version=109.0.0.0&web_rid={room_id}' \
-           f'&enter_source=&Room-Enter-User-Login-Ab=1&is_need_double_stream=false&a_bogus=0'
+    ms_token = generate_random_str(188)
+
+    url_base = 'https://live.douyin.com/webcast/room/web/enter/'
+    url_params = 'aid=6383&app_name=douyin_web&live_id=1&device_platform=web&language=en&enter_from=web_live&cookie_enabled=true' \
+                 '&screen_width=2195&screen_height=1235&browser_language=en&browser_platform=Win32&browser_name=Chrome&browser_version=140.0.0.0' \
+                 f'&web_rid={room_id}&enter_source=&is_need_double_stream=false&insert_task_id=&live_reason=&msToken={ms_token}'
+
+    abogus = ABogus(user_agent=get_request_headers()['user-agent'])
+    signed_query_string, _, _, _ = abogus.generate_abogus(params=url_params, body='')
+
+    api_url = url_base + '?' + signed_query_string
+    logger.debug(f'api_url: {api_url}')
+
+    return api_url
 
 
 def find_stream_url(room):
@@ -143,9 +154,10 @@ def get_user_info(sec_user_id):
 
 def get_request_headers():
     return {
-        # 'user-agent': '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        #               ' (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"',
-        'user-agent': get_random_ua(),
+        # ua需要和请求api的a_bogus所用ua保持一致，暂时先不用随机生成
+        'user-agent': '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                      ' (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"',
+        # 'user-agent': get_random_ua(),
         'cookie': cookie_utils.cookie_cache
     }
 
