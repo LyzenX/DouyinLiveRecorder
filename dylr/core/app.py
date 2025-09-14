@@ -101,6 +101,9 @@ def check_dependencies():
     except:
         lack_dependencies.append('gmssl')
 
+    if len(lack_dependencies) == 0:
+        return True
+
     if win_mode:
         if sys.platform == 'win32':
             os.system(f'start cmd /C "chcp 65001 & '
